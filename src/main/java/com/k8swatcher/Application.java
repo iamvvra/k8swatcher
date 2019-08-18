@@ -39,9 +39,10 @@ public class Application {
     }
 
     @Produces
-    public KubernetesClient defaultKubernetesClient(Config config) {
+    public KubernetesClient defaultKubernetesClient() {
         try {
             log.info("Kubernetes client load");
+            Config config = config();
             if (config != null)
                 return new DefaultKubernetesClient(config);
             else
@@ -52,18 +53,18 @@ public class Application {
         }
     }
 
-    @Produces
-    public Config config() {
+    private Config config() {
         Config config = null;
         ConfigBuilder configBuilder = null;
         if (k8sMasterUrl != null && k8sOAuthToken != null) {
             configBuilder = createConfigBuilder(configBuilder);
-            configBuilder.withMasterUrl(k8sMasterUrl).withNewOauthToken(k8sOAuthToken);
+            configBuilder.withMasterUrl(k8sMasterUrl).withNewOauthToken(k8sOAuthToken)
+                    .withTrustCerts(trustSelfSignedCeriticate);
         }
         if (proxy) {
             configBuilder = createConfigBuilder(configBuilder);
-            configBuilder.withTrustCerts(trustSelfSignedCeriticate).withHttpProxy(httpProxy).withHttpsProxy(httpsProxy)
-                    .withProxyUsername(proxyUsername).withProxyPassword(proxyPassword).build();
+            configBuilder.withHttpProxy(httpProxy).withHttpsProxy(httpsProxy).withProxyUsername(proxyUsername)
+                    .withProxyPassword(proxyPassword).build();
         }
         if (configBuilder != null) {
             config = configBuilder.build();

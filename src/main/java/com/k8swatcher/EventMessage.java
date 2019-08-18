@@ -54,12 +54,33 @@ public class EventMessage implements Serializable {
     }
 
     public String message() {
-        if (message != null) {
-            return String.format("%s `%s` was %s in `%s` namespace of cluster `%s`\nTime `%s`\n`%s`", kind,
-                    resourceName, action.toLowerCase(), namespace, cluster, lastTime, message);
+        String msg = "";
+        if (isWarning()) {
+            msg = String.format("%s `%s` has error, namespace `%s`, cluster `%s`\n`%s`", kind(), resourceName,
+                    namespace, cluster, time());
+        } else {
+            msg = String.format("%s `%s` was %s in `%s` namespace of cluster `%s`\nTime `%s`", kind(), resourceName,
+                    action.toLowerCase(), namespace, cluster, time());
         }
-        return String.format("%s `%s` was %s in `%s` namespace of cluster `%s`\nTime `%s`", kind, resourceName,
-                action.toLowerCase(), namespace, cluster, lastTime);
+        if (message != null) {
+            msg += String.format("\n`%s`", message);
+        }
+        return msg;
+
+    }
+
+    private String time() {
+        if (isEvent())
+            return lastTime;
+        if ("DELETED".equals(action))
+            return deletedTime != null ? deletedTime : creationTime;
+        if ("ADDED".equals(action))
+            return creationTime;
+        return creationTime;
+    }
+
+    private String kind() {
+        return isEvent() ? refferedObjectKind : kind;
     }
 
     public String eventDetailShort() {

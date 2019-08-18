@@ -52,8 +52,8 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
 
     private EventMessage newEventMessage(Action action, T resource) {
         return EventMessage.builder().action(action.name()).namespace(resource.getMetadata().getNamespace())
-                .kind(resource.getKind()).lastTime(resource.getMetadata().getCreationTimestamp())
-                .firstTime(resource.getMetadata().getCreationTimestamp()).cluster(config.clusterName())
+                .kind(resource.getKind()).creationTime(resource.getMetadata().getCreationTimestamp())
+                .deletedTime(resource.getMetadata().getDeletionTimestamp()).cluster(config.clusterName())
                 .resourceName(resource.getMetadata().getName()).build();
     }
 

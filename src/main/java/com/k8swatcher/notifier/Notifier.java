@@ -7,7 +7,4 @@ public interface Notifier {
 
     public void sendNotification(String string, Level level);
 
-    public enum Level {
-        WARNING, NORMAL;
-    }
 }

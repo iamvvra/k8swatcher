@@ -8,7 +8,7 @@ import lombok.Setter;
 @Builder
 @Setter
 public class Message {
-    private Attachment attachment;
     private String channelId;
     private String userId;
+    private Attachment attachment;
 }

@@ -1,13 +1,12 @@
 package com.k8swatcher.notifier.mattermost;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import com.k8swatcher.EventMessage;
+import com.k8swatcher.notifier.Level;
 import com.k8swatcher.notifier.Notifier;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -40,10 +39,6 @@ public class MattermostNotfier implements Notifier {
         this.userDisplayName = userDisplayName;
     }
 
-    public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {
-        log.debug("init");
-    }
-
     @PostConstruct
     public void connect() {
         if (host == null && token == null)
@@ -53,7 +48,6 @@ public class MattermostNotfier implements Notifier {
 
     @Override
     public void sendNotification(EventMessage eventMessage) {
-        log.info(eventMessage.toString());
         Message message = formatedEventMessage(eventMessage);
         mmConnection.post(message);
     }
@@ -66,10 +60,11 @@ public class MattermostNotfier implements Notifier {
     }
 
     private Message formatedEventMessage(EventMessage eventMessage) {
-        String textMessage = eventMessage.message();
-
-        Attachment attachment = createAttachment(eventMessage.title(), getColor(eventMessage), textMessage);
         Message message = createMessage();
+
+        String textMessage = eventMessage.message();
+        Attachment attachment = createAttachment(eventMessage.title(), getColor(eventMessage), textMessage);
+
         message.setAttachment(attachment);
         return message;
     }
@@ -90,7 +85,8 @@ public class MattermostNotfier implements Notifier {
         return level.equals(Level.WARNING) ? WARN_COLOR : NORMAL_COLOR;
     }
 
-    public void destroy(@Observes @Destroyed(ApplicationScoped.class) Object _e) {
+    @PreDestroy
+    public void destroy() {
         mmConnection.close();
     }
 

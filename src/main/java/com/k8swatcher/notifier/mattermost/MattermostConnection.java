@@ -6,8 +6,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import net.bis5.mattermost.client4.MattermostClient;
 import net.bis5.mattermost.model.Post;
 
@@ -28,18 +26,13 @@ public class MattermostConnection {
         post.setChannelId(message.getChannelId());
         post.setUserId(message.getUserId());
         Map<String, Object> attachment = new HashMap<>();
-        attachment.put("attachments", Arrays.asList(getProps(message)));
+        attachment.put("attachments", Arrays.asList(message.getAttachment()));
         post.setProps(attachment);
         send(post);
     }
 
     private void send(Post post) {
         client.createPost(post);
-    }
-
-    private Map<String, Object> getProps(Message message) {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.convertValue(message.getAttachment(), Map.class);
     }
 
     private Post createPost(String message, String user, String channel) {

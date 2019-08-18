@@ -1,6 +1,6 @@
 package com.k8swatcher;
 
-import com.k8swatcher.notifier.Notifier.Level;
+import com.k8swatcher.notifier.Level;
 
 import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.ObjectReference;

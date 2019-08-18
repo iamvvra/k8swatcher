@@ -3,7 +3,7 @@ package com.k8swatcher;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import com.k8swatcher.notifier.Notifier.Level;
+import com.k8swatcher.notifier.Level;
 import com.k8swatcher.notifier.mattermost.MattermostNotfier;
 
 import lombok.extern.slf4j.Slf4j;

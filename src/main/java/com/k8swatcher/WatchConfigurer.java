@@ -4,16 +4,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import com.k8swatcher.notifier.Level;
 import com.k8swatcher.notifier.Notifier;
-import com.k8swatcher.notifier.Notifier.Level;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,14 +35,13 @@ public class WatchConfigurer {
     }
 
     public void registerResourceWatch(@Observes StartupEvent _e) {
-        log.info("Registering resource watchers");
         Set<String> namespaces = watchConfig.getNamespaces();
-        log.info("watched namespaces: " + namespaces);
+        log.info("Registering watchers for objects, " + watchConfig.watchedResources());
+        log.info("Watched namespace :: " + namespaces);
         if (watchConfig.watchAllNamespaces()) {
             namespaces = client.namespaces().list().getItems().stream().map(n -> n.getMetadata().getName())
                     .collect(Collectors.toSet());
         }
-
         namespaces.stream().forEach(ns -> {
             watchConfig.watchedResources().stream().forEach(res -> {
                 switch (res) {
@@ -164,7 +164,8 @@ public class WatchConfigurer {
         });
     }
 
-    public void init(@Observes @Initialized(ApplicationScoped.class) Object init) {
+    @PostConstruct
+    public void init() {
         String startMsg = String.format(watchConfig.startupMessage(), watchConfig.clusterName());
         notificationPublisher.sendMessage(startMsg, Level.NORMAL);
     }
@@ -183,7 +184,8 @@ public class WatchConfigurer {
         }
     }
 
-    public void destroy(@Observes @Destroyed(ApplicationScoped.class) Object init) {
+    @PreDestroy
+    public void destroy(@Observes ShutdownEvent _e) {
         notificationPublisher.sendMessage(String.format(watchConfig.shutdownMessage(), watchConfig.clusterName()),
                 Level.WARNING);
     }
