@@ -1,16 +1,21 @@
 package com.k8swatcher.notifier.mattermost;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public class Post {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Post implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public Post(String channelId, String message) {
         this.channelId = channelId;

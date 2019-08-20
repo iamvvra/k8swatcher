@@ -55,7 +55,7 @@ public class EventsWatcher implements Watcher<Event> {
 
     @Override
     public void onClose(KubernetesClientException cause) {
-        notificationPublisher.sendMessage("error - " + cause.getMessage(), Level.WARNING);
+        notificationPublisher.sendMessage("error - " + cause.toString(), Level.WARNING);
     }
 
     private void sendNotification(EventMessage message) {

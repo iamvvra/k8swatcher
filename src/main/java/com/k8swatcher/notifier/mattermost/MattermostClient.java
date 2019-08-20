@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Headers;
@@ -19,10 +20,13 @@ public class MattermostClient {
     private String mmHostUrl;
     private String apiToken;
     private static final String apiVersion = "/api/v4";
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public static MattermostClient connect(String host, String token) throws IOException {
         MattermostClient mmClient = new MattermostClient(host, token);
-        mmClient.connect();
+        if (!mmClient.connect()) {
+            throw new RuntimeException("Error connecting to the mattermost");
+        }
         return mmClient;
     }
 
@@ -30,6 +34,7 @@ public class MattermostClient {
         this.mmHostUrl = mmHostUrl;
         this.apiToken = apiToken;
         httpClient = new OkHttpClient.Builder().readTimeout(0, TimeUnit.MILLISECONDS).build();
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
     }
 
     public boolean connect() throws IOException {
@@ -56,8 +61,7 @@ public class MattermostClient {
     public void post(Post post) throws IOException {
         RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
                 new ObjectMapper().writeValueAsString(post));
-        Request request = new Request.Builder().header("Authorization", "Bearer " + apiToken)
-                .url(mmHostUrl + apiVersion + "/posts").post(body).build();
+        Request request = createRequest("/posts", "POST", body);
         log.info(request.headers().toString());
         log.info(request.body().toString());
         Response resp = httpClient.newCall(request).execute();
