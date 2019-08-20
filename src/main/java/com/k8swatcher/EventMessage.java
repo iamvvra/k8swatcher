@@ -35,6 +35,10 @@ public class EventMessage implements Serializable {
         return false;
     }
 
+    public boolean isDeleted() {
+        return "DELETED".equals(action);
+    }
+
     private boolean isEvent() {
         return "event".equalsIgnoreCase(kind);
     }
@@ -55,7 +59,7 @@ public class EventMessage implements Serializable {
 
     public String message() {
         String msg = "";
-        if (isWarning()) {
+        if (isWarning() && isEvent()) {
             msg = String.format("%s `%s` has error, namespace `%s`, cluster `%s`\n`%s`", kind(), resourceName,
                     namespace, cluster, time());
         } else {

@@ -1,0 +1,9 @@
+[
+    {
+        "name": "com.fasterxml.jackson.databind.ObjectMapper",
+        "allDeclaredFields": true,
+        "allPublicFields": true,
+        "allDeclaredMethods": true,
+        "allPublicMethods": true
+    }
+]

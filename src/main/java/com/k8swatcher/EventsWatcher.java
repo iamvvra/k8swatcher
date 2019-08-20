@@ -2,14 +2,17 @@ package com.k8swatcher;
 
 import com.k8swatcher.notifier.Level;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.ObjectReference;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class EventsWatcher implements Watcher<Event> {
+    private static final Logger log = LoggerFactory.getLogger(EventsWatcher.class);
+
     private WatchConfig watchConfig;
     private NotificationPublisher notificationPublisher;
 

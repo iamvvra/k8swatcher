@@ -1,52 +1,61 @@
 package com.k8swatcher;
 
+import java.util.Optional;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import lombok.extern.slf4j.Slf4j;
 
 @ApplicationScoped
-@Slf4j
 public class Application {
 
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
+
     @ConfigProperty(name = "k8swatcher.k8s.master-url")
-    private String k8sMasterUrl;
+    private Optional<String> k8sMasterUrl;
     @ConfigProperty(name = "k8swatcher.k8s.oauth-token")
-    private String k8sOAuthToken;
-    @ConfigProperty(name = "k8swatcher.k8s.trust-self-signed-cert")
+    private Optional<String> k8sOAuthToken;
+    @ConfigProperty(name = "k8swatcher.k8s.trust-self-signed-cert", defaultValue = "true")
     private boolean trustSelfSignedCeriticate;
     @ConfigProperty(name = "k8swatcher.k8s.openshift", defaultValue = "false")
     private boolean openShift;
     @ConfigProperty(name = "k8swatcher.k8s.has-proxy", defaultValue = "false")
     private boolean proxy;
     @ConfigProperty(name = "k8swatcher.k8s.http-proxy")
-    private String httpProxy;
+    private Optional<String> httpProxy;
     @ConfigProperty(name = "k8swatcher.k8s.https-proxy")
-    private String httpsProxy;
+    private Optional<String> httpsProxy;
     @ConfigProperty(name = "k8swatcher.k8s.proxy-username")
-    private String proxyUsername;
+    private Optional<String> proxyUsername;
     @ConfigProperty(name = "k8swatcher.k8s.proxy-password")
-    private String proxyPassword;
+    private Optional<String> proxyPassword;
 
     public boolean isOpenshift() {
         return openShift;
     }
 
     @Produces
+    @Singleton
     public KubernetesClient defaultKubernetesClient() {
         try {
-            log.info("Kubernetes client load");
+            DefaultKubernetesClient defaultKubernetesClient = null;
             Config config = config();
-            if (config != null)
-                return new DefaultKubernetesClient(config);
-            else
-                return new DefaultKubernetesClient();
+            if (config != null) {
+                defaultKubernetesClient = new DefaultKubernetesClient(config);
+            } else {
+                defaultKubernetesClient = new DefaultKubernetesClient();
+            }
+            log.info("Kubernetes-client connected to {}", defaultKubernetesClient.getMasterUrl());
+            return defaultKubernetesClient;
         } catch (Exception e) {
             throw new RuntimeException(
                     "Error creating Kubernetes client, check if cluster configuration if provided, or is reachable", e);
@@ -56,15 +65,16 @@ public class Application {
     private Config config() {
         Config config = null;
         ConfigBuilder configBuilder = null;
-        if (k8sMasterUrl != null && k8sOAuthToken != null) {
+        if (k8sMasterUrl.isPresent() && k8sOAuthToken.isPresent()) {
             configBuilder = createConfigBuilder(configBuilder);
-            configBuilder.withMasterUrl(k8sMasterUrl).withNewOauthToken(k8sOAuthToken)
+            configBuilder.withMasterUrl(k8sMasterUrl.get()).withNewOauthToken(k8sOAuthToken.get())
                     .withTrustCerts(trustSelfSignedCeriticate);
         }
         if (proxy) {
             configBuilder = createConfigBuilder(configBuilder);
-            configBuilder.withHttpProxy(httpProxy).withHttpsProxy(httpsProxy).withProxyUsername(proxyUsername)
-                    .withProxyPassword(proxyPassword).build();
+            if (httpProxy.isPresent() && proxyUsername.isPresent() && proxyPassword.isPresent())
+                configBuilder.withHttpProxy(httpProxy.get()).withHttpsProxy(httpsProxy.get())
+                        .withProxyUsername(proxyUsername.get()).withProxyPassword(proxyPassword.get()).build();
         }
         if (configBuilder != null) {
             config = configBuilder.build();
@@ -74,8 +84,7 @@ public class Application {
 
     private ConfigBuilder createConfigBuilder(ConfigBuilder configBuilder) {
         if (configBuilder == null)
-            configBuilder = Config.builder();
+            configBuilder = new ConfigBuilder();
         return configBuilder;
     }
-
 }

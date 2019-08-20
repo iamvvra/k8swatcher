@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
@@ -13,14 +12,17 @@ import javax.inject.Inject;
 import com.k8swatcher.notifier.Level;
 import com.k8swatcher.notifier.Notifier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
-import lombok.extern.slf4j.Slf4j;
 
 @ApplicationScoped
-@Slf4j
 public class WatchConfigurer {
+
+    private static final Logger log = LoggerFactory.getLogger(WatchConfigurer.class);
 
     private KubernetesClient client;
     private WatchConfig watchConfig;
@@ -44,7 +46,9 @@ public class WatchConfigurer {
         }
         namespaces.stream().forEach(ns -> {
             watchConfig.watchedResources().stream().forEach(res -> {
-                switch (res) {
+                Resource object = Resource.valueOf(res);
+                log.debug("register watcher for object, " + object.name());
+                switch (object) {
                 case ALL:
                     break;
                 case POD:
@@ -159,6 +163,8 @@ public class WatchConfigurer {
                     ResourceWatchMap.watchEvents(new ResourceWatcher<>(watchConfig, notificationPublisher))
                             .apply(client, ns);
                     break;
+                default:
+                    break;
                 }
             });
         });
@@ -184,7 +190,7 @@ public class WatchConfigurer {
         }
     }
 
-    @PreDestroy
+    // @PreDestroy
     public void destroy(@Observes ShutdownEvent _e) {
         notificationPublisher.sendMessage(String.format(watchConfig.shutdownMessage(), watchConfig.clusterName()),
                 Level.WARNING);

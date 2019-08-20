@@ -32,10 +32,6 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5</artifactId>
       <scope>test</scope>
     </dependency>
@@ -47,15 +43,6 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-kubernetes-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-vertx</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.bis5.mattermost4j</groupId>
-      <artifactId>mattermost4j-core</artifactId>
-      <version>0.15.0</version>
     </dependency>
   </dependencies>
   <build>
@@ -112,6 +99,13 @@
                 </goals>
                 <configuration>
                   <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                  <additionalBuildArgs>
+                    <!-- <additionalBuildArg>report-unsupported-elements-at-runtime</additionalBuildArg> -->
+                    <!-- <additionalBuildArg>allow-incomplete-classpath</additionalBuildArg> -->
+                    <additionalBuildArg>-H:ReflectionConfigurationFiles=${project.basedir}/reflection-config.json</additionalBuildArg>
+                    <!-- <additionalBuildArgs>-H:DynamicProxyConfigurationResources=</additionalBuildArgs> -->
+                    <!-- <additionalBuildArgs>-J-Dinitialize-at-build-time=java.security.SecureRandom,sun.security.ssl.SSLContextImpl,sun.security.ssl.SSLContextImpl$TLS12Context,sun.security.ssl.SSLSocketFactoryImpl,okhttp3.OkHttpClient,io.fabric8.kubernetes.client.DefaultKubernetesClient,com.k8swatcher.WatchConfigurer,io.quarkus.arc.ContextInstanceHandleImpl,io.quarkus.arc.LazyValue,java.util.concurrent.ConcurrentHashMap,io.quarkus.arc.ComputingCache,io.quarkus.arc.ApplicationContext,io.quarkus.arc.ArcContainerImpl,java.util.concurrent.atomic.AtomicReference</additionalBuildArgs> -->
+                  </additionalBuildArgs>
                 </configuration>
               </execution>
             </executions>

@@ -3,36 +3,44 @@ package com.k8swatcher;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
-@Slf4j
 public class WatchConfig {
-    @ConfigProperty(name = "k8swatcher.resources", defaultValue = "ALL")
-    private Set<Resource> resources;
+    private static final Logger log = LoggerFactory.getLogger(WatchConfig.class);
 
+    @Inject
+    @ConfigProperty(name = "k8swatcher.resources", defaultValue = "ALL")
+    private Set<String> resources;
+
+    @Inject
     @ConfigProperty(name = "k8swatcher.namespaces", defaultValue = "ALL")
     private Set<String> namespaces;
 
+    @Inject
     @ConfigProperty(name = "k8swatcher.event-levels", defaultValue = "ALL")
-    private Set<EventLevel> eventLevels;
+    private Set<String> eventLevels;
 
+    @Inject
     @ConfigProperty(name = "k8swatcher.cluster-name", defaultValue = "unnamed-cluster")
     private String clusterName;
 
+    @Inject
     @ConfigProperty(name = "k8swatcher.event-from-last-seconds", defaultValue = "15")
     private int lastEventTimeInSeconds;
 
+    @Inject
     @ConfigProperty(name = "k8swatcher.mattermost-enabled", defaultValue = "false")
     private boolean matterMostEnabled;
 
@@ -59,27 +67,28 @@ public class WatchConfig {
         return matterMostEnabled;
     }
 
-    public boolean isWatchedResource(Resource resource) {
-        return resources.isEmpty() || resources.contains(Resource.ALL) ? true : resources.contains(resource);
+    public boolean isWatchedResource(String resource) {
+        return resources.isEmpty() || resources.contains("ALL") ? true : resources.contains(resource.toUpperCase());
     }
 
-    public Set<Resource> watchedResources() {
-        return resources.isEmpty() || resources.contains(Resource.ALL)
-                ? new HashSet<Resource>(Arrays.asList(Resource.values()))
+    public Set<String> watchedResources() {
+        return resources.isEmpty() || resources.contains("ALL")
+                ? Stream.of(Resource.values()).map(r -> r.name()).collect(Collectors.toSet())
                 : resources;
 
     }
 
-    public boolean isWatchedResource(String resource) {
-        return Resource.valueof(resource.toUpperCase()).map(r -> isWatchedResource(r)).isPresent();
-    }
+    // public boolean isWatchedResource(String resource) {
+    // return Resource.valueof(resource.toUpperCase()).map(r ->
+    // isWatchedResource(r)).isPresent();
+    // }
 
     public boolean isValidReason(EventMessage message) {
         return Reason.valueof(message.getReason()).isPresent();
     }
 
     public boolean isWatchedEventLevel(String eventLevel) {
-        return EventLevel.valueof(eventLevel.toUpperCase()).map(e -> eventLevels.contains(e)).get();
+        return eventLevels.contains(eventLevel.toUpperCase());
     }
 
     public String clusterName() {

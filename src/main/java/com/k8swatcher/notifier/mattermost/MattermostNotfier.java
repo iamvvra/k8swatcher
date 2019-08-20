@@ -1,5 +1,7 @@
 package com.k8swatcher.notifier.mattermost;
 
+import java.io.IOException;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
@@ -22,7 +24,7 @@ public class MattermostNotfier implements Notifier {
     private String host;
     private String token;
     private String channelId;
-    private MattermostConnection mmConnection;
+    private MattermostClient mattermostClient;
     private String userId;
     private String userDisplayName;
 
@@ -43,38 +45,45 @@ public class MattermostNotfier implements Notifier {
     public void connect() {
         if (host == null && token == null)
             return;
-        mmConnection = MattermostConnection.connect(host, token);
+        try {
+            mattermostClient = MattermostClient.connect(host, token);
+        } catch (IOException e) {
+            log.error("Error connecting Mattermost " + host, e);
+        }
     }
 
     @Override
     public void sendNotification(EventMessage eventMessage) {
-        Message message = formatedEventMessage(eventMessage);
-        mmConnection.post(message);
+        try {
+            mattermostClient.post(postWithAttachment(eventMessage));
+        } catch (IOException e) {
+            log.error("Error sending message", e);
+        }
     }
 
     @Override
     public void sendNotification(String message, Level level) {
-        Message msg = createMessage();
-        msg.setAttachment(createAttachment("", getColor(level), message));
-        mmConnection.post(msg);
+        try {
+            Post post = newPost("");
+            post.attach(createAttachment("", getColor(level), message));
+            mattermostClient.post(post);
+        } catch (IOException e) {
+            log.error("Error sending message", e);
+        }
     }
 
-    private Message formatedEventMessage(EventMessage eventMessage) {
-        Message message = createMessage();
+    private Post postWithAttachment(EventMessage eventMessage) {
+        Post post = newPost(null);
+        post.attach(createAttachment(eventMessage.title(), getColor(eventMessage), eventMessage.message()));
+        return post;
+    }
 
-        String textMessage = eventMessage.message();
-        Attachment attachment = createAttachment(eventMessage.title(), getColor(eventMessage), textMessage);
-
-        message.setAttachment(attachment);
-        return message;
+    private Post newPost(String message) {
+        return new Post(channelId, userId, message);
     }
 
     private Attachment createAttachment(String title, String color, String message) {
         return Attachment.builder().title(title).authorName(userDisplayName).text(message).color(color).build();
-    }
-
-    private Message createMessage() {
-        return Message.builder().channelId(channelId).userId(userId).build();
     }
 
     private String getColor(EventMessage eventMessage) {
@@ -87,7 +96,7 @@ public class MattermostNotfier implements Notifier {
 
     @PreDestroy
     public void destroy() {
-        mmConnection.close();
+        mattermostClient.close();
     }
 
 }

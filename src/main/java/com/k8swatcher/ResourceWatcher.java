@@ -1,12 +1,16 @@
 package com.k8swatcher;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
+
+    private static final Logger log = LoggerFactory.getLogger(ResourceWatcher.class);
+
     private WatchConfig config;
     private NotificationPublisher notificationPublisher;
 
@@ -38,11 +42,11 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
             return;
         }
         if (isHistoricEvent(resource)) {
-            log.debug("skip old events, action: " + action);
+            log.debug("skip old events, action: " + action + ", res:" + resource.getKind());
             return;
         }
         if (!isWatchedResource(resource)) {
-            log.debug("skip unwatched resource, " + resource.getKind());
+            log.debug("skip unwatched resource, : action, " + action + ", res:" + resource.getKind());
             return;
         }
         EventMessage newEventMessage = newEventMessage(action, resource);
