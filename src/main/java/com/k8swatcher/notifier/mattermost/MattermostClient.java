@@ -63,7 +63,7 @@ public class MattermostClient {
                 new ObjectMapper().writeValueAsString(post));
         Request request = createRequest("/posts", "POST", body);
         Response resp = httpClient.newCall(request).execute();
-        log.info("create post response", resp.body().string());
+        log.debug("create post response :: ", resp.isSuccessful());
         resp.close();
     }
 }

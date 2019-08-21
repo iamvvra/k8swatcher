@@ -49,7 +49,7 @@ public class EventsWatcher implements Watcher<Event> {
                 .reason(resource.getReason()).eventType(resource.getType()).lastTime(lastTimestamp)
                 .firstTime(resource.getFirstTimestamp()).message(resource.getMessage())
                 .cluster(watchConfig.clusterName()).resourceName(involvedObject.getName()).build();
-        log.info("New event received :: " + event.eventDetailShort());
+        log.info("New {} event received :: {}", action, event.eventDetailShort());
         sendNotification(event);
     }
 

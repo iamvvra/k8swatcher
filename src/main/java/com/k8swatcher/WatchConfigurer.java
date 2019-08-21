@@ -38,8 +38,7 @@ public class WatchConfigurer {
 
     public void registerResourceWatch(@Observes StartupEvent _e) {
         Set<String> namespaces = watchConfig.getNamespaces();
-        log.info("Registering watchers for objects, " + watchConfig.watchedResources());
-        log.info("Watched namespace :: " + namespaces);
+        log.info("Registering watchers for objects, {}, in namespaces {}", watchConfig.watchedResources(), namespaces);
         if (watchConfig.watchAllNamespaces()) {
             namespaces = client.namespaces().list().getItems().stream().map(n -> n.getMetadata().getName())
                     .collect(Collectors.toSet());
@@ -192,6 +191,7 @@ public class WatchConfigurer {
 
     // @PreDestroy
     public void destroy(@Observes ShutdownEvent _e) {
+        log.info("k8swatcher shutting down");
         notificationPublisher.sendMessage(String.format(watchConfig.shutdownMessage(), watchConfig.clusterName()),
                 Level.WARNING);
     }

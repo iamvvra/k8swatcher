@@ -54,7 +54,7 @@ public class Application {
             } else {
                 defaultKubernetesClient = new DefaultKubernetesClient();
             }
-            log.info("Kubernetes-client connected to {}", defaultKubernetesClient.getMasterUrl());
+            log.info("Watcher connected to the k8s cluster {}", defaultKubernetesClient.getMasterUrl());
             return defaultKubernetesClient;
         } catch (Exception e) {
             throw new RuntimeException(

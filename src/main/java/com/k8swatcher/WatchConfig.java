@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
@@ -44,16 +43,11 @@ public class WatchConfig {
     @ConfigProperty(name = "k8swatcher.mattermost-enabled", defaultValue = "false")
     private boolean matterMostEnabled;
 
-    private ZonedDateTime startTime;
+    private ZonedDateTime startTime = ZonedDateTime.now(ZoneId.of("Z").normalized());
 
     private final String startupMessage = ":eyes: `k8swatcher` started - cluster `%s`";
 
     private final String shutdownMessage = ":ghost: `k8swatcher` shutdown down - no events are notified for this cluster `%s`";
-
-    @PostConstruct
-    private void setStartTime() {
-        startTime = ZonedDateTime.now(ZoneId.of("Z").normalized());
-    }
 
     public Set<String> getNamespaces() {
         return Collections.unmodifiableSet(namespaces);
@@ -77,11 +71,6 @@ public class WatchConfig {
                 : resources;
 
     }
-
-    // public boolean isWatchedResource(String resource) {
-    // return Resource.valueof(resource.toUpperCase()).map(r ->
-    // isWatchedResource(r)).isPresent();
-    // }
 
     public boolean isValidReason(EventMessage message) {
         return Reason.valueof(message.getReason()).isPresent();

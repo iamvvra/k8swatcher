@@ -51,7 +51,7 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
         }
         EventMessage newEventMessage = newEventMessage(action, resource);
         log.debug("new object event received, " + action + ", " + resource);
-        log.info("new object event received, " + newEventMessage.eventDetailShort());
+        log.info("New {} event received, {}", newEventMessage.getKind(), newEventMessage.eventDetailShort());
         processEvent(newEventMessage);
     }
 
@@ -79,7 +79,7 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
     }
 
     public void processEvent(EventMessage eventMessage) {
-        log.info("processing event, " + eventMessage);
+        log.info("processing event, " + eventMessage.eventDetailShort());
         notificationPublisher.notifyEvent(eventMessage);
     }
 }
