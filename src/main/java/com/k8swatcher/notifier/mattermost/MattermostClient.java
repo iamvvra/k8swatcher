@@ -62,8 +62,6 @@ public class MattermostClient {
         RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
                 new ObjectMapper().writeValueAsString(post));
         Request request = createRequest("/posts", "POST", body);
-        log.info(request.headers().toString());
-        log.info(request.body().toString());
         Response resp = httpClient.newCall(request).execute();
         log.info("create post response", resp.body().string());
         resp.close();

@@ -8,11 +8,13 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import com.k8swatcher.EventMessage;
+import com.k8swatcher.JsonUtil;
 import com.k8swatcher.notifier.Level;
 import com.k8swatcher.notifier.Notifier;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import io.quarkus.vertx.ConsumeEvent;
 import lombok.extern.slf4j.Slf4j;
 
 @ApplicationScoped
@@ -27,13 +29,16 @@ public class MattermostNotfier implements Notifier {
     private MattermostClient mattermostClient;
     private String userId;
     private String userDisplayName;
+    private Boolean enabled;
 
     @Inject
-    public MattermostNotfier(@ConfigProperty(name = "k8swatcher.mattermost-host") String host,
+    public MattermostNotfier(@ConfigProperty(name = "k8swatcher.mattermost-enabled") Boolean enabled,
+            @ConfigProperty(name = "k8swatcher.mattermost-host") String host,
             @ConfigProperty(name = "k8swatcher.mattermost-api-token") String token,
             @ConfigProperty(name = "k8swatcher.mattermost-channel-id") String channelId,
             @ConfigProperty(name = "k8swatcher.mattermost-user-id") String userId,
             @ConfigProperty(name = "k8swatcher.mattermost-user-display-name") String userDisplayName) {
+        this.enabled = enabled;
         this.host = host;
         this.token = token;
         this.channelId = channelId;
@@ -43,13 +48,24 @@ public class MattermostNotfier implements Notifier {
 
     @PostConstruct
     public void connect() {
+        if (!enabled)
+            return;
         if (host == null && token == null)
             return;
         try {
             mattermostClient = MattermostClient.connect(host, token);
+            log.info("Mattermost connected, " + host);
         } catch (IOException e) {
             log.error("Error connecting Mattermost " + host, e);
         }
+    }
+
+    @ConsumeEvent(value = "mattermost")
+    public void notify(String message) {
+        if (!enabled)
+            return;
+        EventMessage eventMessage = JsonUtil.toObject(message, EventMessage.class);
+        sendNotification(eventMessage);
     }
 
     @Override

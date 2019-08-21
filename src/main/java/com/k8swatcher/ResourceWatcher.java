@@ -38,11 +38,11 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
     @Override
     public void eventReceived(Action action, T resource) {
         if (!isActionWatched(action)) {
-            log.debug("skip action, " + action + ", res, " + resource);
+            log.debug("skip resource action, " + action + ", res, " + resource);
             return;
         }
         if (isHistoricEvent(resource)) {
-            log.debug("skip old events, action: " + action + ", res:" + resource.getKind());
+            log.debug("skip old resource events, action: " + action + ", res:" + resource.getKind());
             return;
         }
         if (!isWatchedResource(resource)) {
@@ -50,7 +50,8 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
             return;
         }
         EventMessage newEventMessage = newEventMessage(action, resource);
-        log.info("new event received, " + action + ", " + resource);
+        log.debug("new object event received, " + action + ", " + resource);
+        log.info("new object event received, " + newEventMessage.eventDetailShort());
         processEvent(newEventMessage);
     }
 
