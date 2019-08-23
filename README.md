@@ -13,21 +13,34 @@ The `k8swatcher` can be run in different ways.
 
 ### Build & run as a Java application
 To build an Java uber jar, run
+
 `$ mvn clean package`
+
 This should produce an uber jar file in the target directory - `./target/k8swatcher-1.0-SNAPSHOT-runner.jar`. 
+
 To run the watcher app, execute
+
 `$ java -jar ./target/k8swatcher-1.0-SNAPSHOT-runner.jar`
+
 To pass arguments overriding the values in the `application.properties` pass the property with the value along with the above command.
-`$ java -jar ./target/k8swatcher-1.0-SNAPSHOT-runner.jar -Dquarkus.log.level=DEBUG`, this only accepts proeprties defined by the `k8swatcher` or the `quarkus` framework.
+
+`$ java -jar ./target/k8swatcher-1.0-SNAPSHOT-runner.jar -Dquarkus.log.level=DEBUG`, this only accepts properties defined by the `k8swatcher` or the `quarkus` framework.
 
 ### Build & run as a native binary
 The `k8swatcher` can be build as a native binary using GraalVM. For this GraalVM has to be installed and configured. Refer to GraalVM for installation and configuring.
+
 Once the GraalVM is setup, run the below command to create a native binary,
+
 `$ mvn clean package -Pnative`
+
 This will generate a native binary file (based on the OS it was executed) in `./target/k8swatcher-1.0-SNAPSHOT-runner`.
+
 This can be executed directly,
+
 `$ ./target/k8swatcher-1.0-SNAPSHOT-runner`
+
 Additional program arguments (application properties) can also be passed,
+
 `$ ./target/k8swatcher-1.0-SNAPSHOT-runner -Dquarkus.log.level=DEBUG`
 
 ### Build & run as Docker image
@@ -36,11 +49,17 @@ Two ways to run a `k8swatcher` as a Docker image.
 2. Build and run docker image with the native binary
 #### Java docker image
 The docker image creation has two steps - a) compile and build Java artifacts 2) create docker image from the generated `Java` binary artifact.
+
 `$ mvn clean package` - should create, copy necessary artifacts and library jars to target directory.
+
 Create the docker image
+
 `$ docker build -t k8swatcher -f src/main/docker/Dockerfile.jvm .`
+
 This will create a docker image from the `fabric8/java-alpine-openjdk8-jdk`, copying the `*runner.jar` and its libraries to the image.
+
 Run the docker image
+
 `$ docker run k8swatcher`
 
 ### Build, deploy and run inside a Kubernetes cluster
