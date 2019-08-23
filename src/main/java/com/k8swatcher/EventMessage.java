@@ -3,6 +3,7 @@ package com.k8swatcher;
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
+@JsonDeserialize(using = EventMessageDeserializer.class)
 public class EventMessage implements Serializable {
     private static final long serialVersionUID = 1L;
     private String action;
@@ -74,7 +76,7 @@ public class EventMessage implements Serializable {
             msg = String.format("%s `%s` was %s in `%s` namespace of cluster `%s`\nTime `%s`", kind(), resourceName,
                     action.toLowerCase(), namespace, cluster, time());
         }
-        if (message != null) {
+        if (message != null && !message.isEmpty()) {
             msg += String.format("\n`%s`", message);
         }
         return msg;
