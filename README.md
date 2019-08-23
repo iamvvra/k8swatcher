@@ -1,7 +1,9 @@
 
 # k8swatcher
 `k8swatcher` (`Kubernetes watcher`) watches different Kubernetes objects and notifies their state changes, abnormalities to developer collaboration tools such as Mattermost, Slack, Elasticsearch or alert an email. 
+
 Technically, the`k8swatcher` can connect & watch almost all the flavors of Kubernetes versions - vannila kubernetes, `Redhat Openshift`, AWS `eks`, Google `gke`, Azure `aks`, DigitalOcean or the Platform9 - additionaly, it works in `minikube` and `minisihft`, too. It was tested in `minikube`, `minishift`, Redhat Openshift, eks & gke clusters.
+
 The current version supports notifying events only to Mattermost.
 
 ## Setup
