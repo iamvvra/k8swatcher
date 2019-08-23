@@ -2,271 +2,285 @@ package com.k8swatcher;
 
 import java.util.function.BiFunction;
 
-import io.fabric8.kubernetes.api.model.ConfigMap;
-import io.fabric8.kubernetes.api.model.Endpoints;
-import io.fabric8.kubernetes.api.model.Event;
-import io.fabric8.kubernetes.api.model.HorizontalPodAutoscaler;
-import io.fabric8.kubernetes.api.model.LimitRange;
-import io.fabric8.kubernetes.api.model.Namespace;
-import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.api.model.PersistentVolume;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.ReplicationController;
-import io.fabric8.kubernetes.api.model.ResourceQuota;
-import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServiceAccount;
-import io.fabric8.kubernetes.api.model.apps.DaemonSet;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.fabric8.kubernetes.api.model.apps.ReplicaSet;
-import io.fabric8.kubernetes.api.model.apps.StatefulSet;
-import io.fabric8.kubernetes.api.model.batch.CronJob;
-import io.fabric8.kubernetes.api.model.batch.Job;
-import io.fabric8.kubernetes.api.model.extensions.Ingress;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.policy.PodDisruptionBudget;
-import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
-import io.fabric8.kubernetes.api.model.rbac.ClusterRoleBinding;
-import io.fabric8.kubernetes.api.model.rbac.Role;
-import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
-import io.fabric8.kubernetes.api.model.storage.StorageClass;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 
-public final class ResourceWatchMap {
+@ApplicationScoped
+public class ResourceWatchMap {
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchPods(ResourceWatcher<Pod> ResourceWatcher) {
+    private WatchConfig config;
+    private NotificationPublisher notificationPublisher;
+
+    @Inject
+    public ResourceWatchMap(WatchConfig watchConfig, NotificationPublisher notificationPublisher) {
+        this.config = watchConfig;
+        this.notificationPublisher = notificationPublisher;
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchPods() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.pods().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.pods().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null ? kClient.pods().inNamespace(ns).watch(new PodWatcher(config, notificationPublisher))
+                    : kClient.pods().inAnyNamespace().watch(new PodWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchServices(
-            ResourceWatcher<Service> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchServices() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.services().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.services().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.services().inNamespace(ns).watch(new ServiceWatcher(config, notificationPublisher))
+                    : kClient.services().inAnyNamespace().watch(new ServiceWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchPVs(
-            ResourceWatcher<PersistentVolume> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchPVs() {
         return (kClient, ns) -> {
-            return kClient.persistentVolumes().watch(ResourceWatcher);
+            return kClient.persistentVolumes().watch(new PersistentVolumeWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchPVCs(
-            ResourceWatcher<PersistentVolumeClaim> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchPVCs() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.persistentVolumeClaims().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.persistentVolumeClaims().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.persistentVolumeClaims().inNamespace(ns)
+                            .watch(new PersistentVolumeClaimWatcher(config, notificationPublisher))
+                    : kClient.persistentVolumeClaims().inAnyNamespace()
+                            .watch(new PersistentVolumeClaimWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchSecrets(
-            ResourceWatcher<Secret> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchSecrets() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.secrets().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.secrets().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.secrets().inNamespace(ns).watch(new SecretWatcher(config, notificationPublisher))
+                    : kClient.secrets().inAnyNamespace().watch(new SecretWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchConfigmaps(
-            ResourceWatcher<ConfigMap> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchConfigmaps() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.configMaps().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.configMaps().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.configMaps().inNamespace(ns).watch(new ConfigMapWatcher(config, notificationPublisher))
+                    : kClient.configMaps().inAnyNamespace().watch(new ConfigMapWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchJobs(ResourceWatcher<Job> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchJobs() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.batch().jobs().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.batch().jobs().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.batch().jobs().inNamespace(ns).watch(new JobWatcher(config, notificationPublisher))
+                    : kClient.batch().jobs().inAnyNamespace().watch(new JobWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchCronJobs(
-            ResourceWatcher<CronJob> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchCronJobs() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.batch().cronjobs().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.batch().cronjobs().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.batch().cronjobs().inNamespace(ns)
+                            .watch(new CronJobWatcher(config, notificationPublisher))
+                    : kClient.batch().cronjobs().inAnyNamespace()
+                            .watch(new CronJobWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchNodes(ResourceWatcher<Node> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchNodes() {
         return (kClient, ns) -> {
-            return kClient.nodes().watch(ResourceWatcher);
+            return kClient.nodes().watch(new NodeWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchNamespaces(
-            ResourceWatcher<Namespace> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchNamespaces() {
         return (kClient, ns) -> {
-            return kClient.namespaces().watch(ResourceWatcher);
+            return kClient.namespaces().watch(new NamespaceWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchRoles(ResourceWatcher<Role> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchRoles() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.rbac().roles().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.rbac().roles().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.rbac().roles().inNamespace(ns).watch(new RoleWatcher(config, notificationPublisher))
+                    : kClient.rbac().roles().inAnyNamespace().watch(new RoleWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchClusterRoles(
-            ResourceWatcher<ClusterRole> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchClusterRoles() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.rbac().clusterRoles().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.rbac().clusterRoles().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.rbac().clusterRoles().inNamespace(ns)
+                            .watch(new ClusterRoleWatcher(config, notificationPublisher))
+                    : kClient.rbac().clusterRoles().inAnyNamespace()
+                            .watch(new ClusterRoleWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchRoleBindings(
-            ResourceWatcher<RoleBinding> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchRoleBindings() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.rbac().roleBindings().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.rbac().roleBindings().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.rbac().roleBindings().inNamespace(ns)
+                            .watch(new RoleBindingWatcher(config, notificationPublisher))
+                    : kClient.rbac().roleBindings().inAnyNamespace()
+                            .watch(new RoleBindingWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchClusterRoleBindings(
-            ResourceWatcher<ClusterRoleBinding> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchClusterRoleBindings() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.rbac().clusterRoleBindings().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.rbac().clusterRoleBindings().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.rbac().clusterRoleBindings().inNamespace(ns)
+                            .watch(new ClusterRoleBindingWatcher(config, notificationPublisher))
+                    : kClient.rbac().clusterRoleBindings().inAnyNamespace()
+                            .watch(new ClusterRoleBindingWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchDeployments(
-            ResourceWatcher<Deployment> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchDeployments() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.apps().deployments().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.apps().deployments().inAnyNamespace().watch(ResourceWatcher);
-
-        };
-    }
-
-    public final static BiFunction<KubernetesClient, String, Watch> watchStatefulsets(
-            ResourceWatcher<StatefulSet> ResourceWatcher) {
-        return (kClient, ns) -> {
-            return ns != null ? kClient.apps().statefulSets().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.apps().statefulSets().inAnyNamespace().watch(ResourceWatcher);
-
-        };
-    }
-
-    public final static BiFunction<KubernetesClient, String, Watch> watchDaemonsets(
-            ResourceWatcher<DaemonSet> ResourceWatcher) {
-        return (kClient, ns) -> {
-            return ns != null ? kClient.apps().daemonSets().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.apps().daemonSets().inAnyNamespace().watch(ResourceWatcher);
-
-        };
-    }
-
-    public final static BiFunction<KubernetesClient, String, Watch> watchNetworkPolicies(
-            ResourceWatcher<NetworkPolicy> ResourceWatcher) {
-        return (kClient, ns) -> {
-            return ns != null ? kClient.network().networkPolicies().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.network().networkPolicies().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.apps().deployments().inNamespace(ns)
+                            .watch(new DeploymentWatcher(config, notificationPublisher))
+                    : kClient.apps().deployments().inAnyNamespace()
+                            .watch(new DeploymentWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchIngresses(
-            ResourceWatcher<Ingress> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchStatefulsets() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.extensions().ingresses().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.extensions().ingresses().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.apps().statefulSets().inNamespace(ns)
+                            .watch(new StatefulSetWatcher(config, notificationPublisher))
+                    : kClient.apps().statefulSets().inAnyNamespace()
+                            .watch(new StatefulSetWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchReplicationControllers(
-            ResourceWatcher<ReplicationController> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchDaemonsets() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.replicationControllers().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.replicationControllers().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.apps().daemonSets().inNamespace(ns)
+                            .watch(new DaemonSetWatcher(config, notificationPublisher))
+                    : kClient.apps().daemonSets().inAnyNamespace()
+                            .watch(new DaemonSetWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchServiceAccounts(
-            ResourceWatcher<ServiceAccount> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchNetworkPolicies() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.serviceAccounts().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.serviceAccounts().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.network().networkPolicies().inNamespace(ns)
+                            .watch(new NetworkPolicyWatcher(config, notificationPublisher))
+                    : kClient.network().networkPolicies().inAnyNamespace()
+                            .watch(new NetworkPolicyWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchStorageClasses(
-            ResourceWatcher<StorageClass> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchIngresses() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.storage().storageClasses().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.storage().storageClasses().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.extensions().ingresses().inNamespace(ns)
+                            .watch(new IngressWatcher(config, notificationPublisher))
+                    : kClient.extensions().ingresses().inAnyNamespace()
+                            .watch(new IngressWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchResourceQuotas(
-            ResourceWatcher<ResourceQuota> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchReplicationControllers() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.resourceQuotas().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.resourceQuotas().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.replicationControllers().inNamespace(ns)
+                            .watch(new ReplicationControllerWatcher(config, notificationPublisher))
+                    : kClient.replicationControllers().inAnyNamespace()
+                            .watch(new ReplicationControllerWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchEndpoints(
-            ResourceWatcher<Endpoints> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchServiceAccounts() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.endpoints().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.endpoints().inAnyNamespace().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.serviceAccounts().inNamespace(ns)
+                            .watch(new ServiceAccountWatcher(config, notificationPublisher))
+                    : kClient.serviceAccounts().inAnyNamespace()
+                            .watch(new ServiceAccountWatcher(config, notificationPublisher));
 
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchHorizontalPodAutoScalers(
-            ResourceWatcher<HorizontalPodAutoscaler> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchStorageClasses() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.autoscaling().horizontalPodAutoscalers().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.autoscaling().horizontalPodAutoscalers().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.storage().storageClasses().inNamespace(ns)
+                            .watch(new StorageClassWatcher(config, notificationPublisher))
+                    : kClient.storage().storageClasses().inAnyNamespace()
+                            .watch(new StorageClassWatcher(config, notificationPublisher));
+
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchLimitRanges(
-            ResourceWatcher<LimitRange> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchResourceQuotas() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.limitRanges().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.limitRanges().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.resourceQuotas().inNamespace(ns)
+                            .watch(new ResourceQuotaWatcher(config, notificationPublisher))
+                    : kClient.resourceQuotas().inAnyNamespace()
+                            .watch(new ResourceQuotaWatcher(config, notificationPublisher));
+
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchReplicaSets(
-            ResourceWatcher<ReplicaSet> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchEndpoints() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.apps().replicaSets().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.apps().replicaSets().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.endpoints().inNamespace(ns).watch(new EndpointsWatcher(config, notificationPublisher))
+                    : kClient.endpoints().inAnyNamespace().watch(new EndpointsWatcher(config, notificationPublisher));
+
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchEvents(
-            ResourceWatcher<Event> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchHorizontalPodAutoScalers() {
         return (kClient, ns) -> {
-            return ns != null ? kClient.events().inNamespace(ns).watch(ResourceWatcher)
-                    : kClient.events().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.autoscaling().horizontalPodAutoscalers().inNamespace(ns)
+                            .watch(new HorizontalPodAutoscalerWatcher(config, notificationPublisher))
+                    : kClient.autoscaling().horizontalPodAutoscalers()
+                            .watch(new HorizontalPodAutoscalerWatcher(config, notificationPublisher));
         };
     }
 
-    public final static BiFunction<KubernetesClient, String, Watch> watchDisruptionBudgets(
-            ResourceWatcher<PodDisruptionBudget> ResourceWatcher) {
+    public BiFunction<KubernetesClient, String, Watch> watchLimitRanges() {
         return (kClient, ns) -> {
-            return kClient.policy().podDisruptionBudget().watch(ResourceWatcher);
+            return ns != null
+                    ? kClient.limitRanges().inNamespace(ns).watch(new LimitRangeWatcher(config, notificationPublisher))
+                    : kClient.limitRanges().watch(new LimitRangeWatcher(config, notificationPublisher));
+        };
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchReplicaSets() {
+        return (kClient, ns) -> {
+            return ns != null
+                    ? kClient.apps().replicaSets().inNamespace(ns)
+                            .watch(new ReplicaSetWatcher(config, notificationPublisher))
+                    : kClient.apps().replicaSets().watch(new ReplicaSetWatcher(config, notificationPublisher));
+        };
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchEvents() {
+        return (kClient, ns) -> {
+            return ns != null ? kClient.events().inNamespace(ns).watch(new EventsWatcher(config, notificationPublisher))
+                    : kClient.events().watch(new EventsWatcher(config, notificationPublisher));
+        };
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchDisruptionBudgets() {
+        return (kClient, ns) -> {
+            return kClient.policy().podDisruptionBudget()
+                    .watch(new DisruptionBudgetWatcher(config, notificationPublisher));
 
         };
     }

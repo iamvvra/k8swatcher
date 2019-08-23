@@ -23,10 +23,12 @@ public class MattermostClient {
     private final ObjectMapper mapper = new ObjectMapper();
 
     public static MattermostClient connect(String host, String token) throws IOException {
+        log.debug("establishing the connection to mattermost " + host);
         MattermostClient mmClient = new MattermostClient(host, token);
         if (!mmClient.connect()) {
             throw new RuntimeException("Error connecting to the mattermost");
         }
+        log.debug("connected to mattermost " + host);
         return mmClient;
     }
 
@@ -41,6 +43,7 @@ public class MattermostClient {
         Request request = createRequest("/users/me/status", "GET", null);
         Response response = httpClient.newCall(request).execute();
         boolean status = response.isSuccessful();
+        log.debug("check status: " + (status ? "success" : "failed"));
         response.close();
         return status;
     }
@@ -59,11 +62,13 @@ public class MattermostClient {
     }
 
     public void post(Post post) throws IOException {
-        RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"),
-                new ObjectMapper().writeValueAsString(post));
+        log.debug("create the post, " + post.toString());
+        String postBody = new ObjectMapper().writeValueAsString(post);
+        RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), postBody);
         Request request = createRequest("/posts", "POST", body);
+        log.debug("create post request\nresponse-code: {}\n{}\n{}", request.url(), request.headers(), postBody);
         Response resp = httpClient.newCall(request).execute();
-        log.debug("create post response :: ", resp.isSuccessful());
+        log.debug("create post response\n{}\n{}\n{}", resp.code(), resp.headers(), resp.body().string());
         resp.close();
     }
 }

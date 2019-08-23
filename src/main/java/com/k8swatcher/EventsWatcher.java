@@ -1,24 +1,16 @@
 package com.k8swatcher;
 
-import com.k8swatcher.notifier.Level;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.ObjectReference;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.Watcher;
 
-public class EventsWatcher implements Watcher<Event> {
+public class EventsWatcher extends ResourceWatcher<Event> {
     private static final Logger log = LoggerFactory.getLogger(EventsWatcher.class);
 
-    private WatchConfig watchConfig;
-    private NotificationPublisher notificationPublisher;
-
     public EventsWatcher(WatchConfig watchConfig, NotificationPublisher notificationPublisher) {
-        this.watchConfig = watchConfig;
-        this.notificationPublisher = notificationPublisher;
+        super(watchConfig, notificationPublisher);
     }
 
     @Override
@@ -28,37 +20,37 @@ public class EventsWatcher implements Watcher<Event> {
             return;
         }
         String lastTimestamp = resource.getLastTimestamp();
-        if (watchConfig.isOldEvent(lastTimestamp)) {
+        if (config.isOldEvent(lastTimestamp)) {
             log.debug("Skipping old events, " + lastTimestamp);
             return;
         }
-        if (!watchConfig.isWatchedResource(resource.getInvolvedObject().getKind())) {
+        if (!config.isWatchedResource(resource.getInvolvedObject().getKind())) {
             log.debug("skipping the event of this kind, " + resource.getInvolvedObject().getKind());
             return;
         }
-        if (!watchConfig.isWatchedEventLevel(resource.getType())) {
+        if (!config.isWatchedEventLevel(resource.getType())) {
             log.debug("skipping event level, " + resource);
             return;
         }
-        log.debug("New event received :: action: " + action.name() + ", res: " + resource);
-
-        ObjectReference involvedObject = resource.getInvolvedObject();
-        String kind = involvedObject.getKind();
-        EventMessage event = EventMessage.builder().action(action.name())
-                .namespace(resource.getMetadata().getNamespace()).kind(resource.getKind()).refferedObjectKind(kind)
-                .reason(resource.getReason()).eventType(resource.getType()).lastTime(lastTimestamp)
-                .firstTime(resource.getFirstTimestamp()).message(resource.getMessage())
-                .cluster(watchConfig.clusterName()).resourceName(involvedObject.getName()).build();
-        log.info("New {} event received :: {}", action, event.eventDetailShort());
-        sendNotification(event);
+        notify(newEventMessage(action, resource));
     }
 
     @Override
-    public void onClose(KubernetesClientException cause) {
-        notificationPublisher.sendMessage("error - " + cause.toString(), Level.WARNING);
+    protected EventMessage newEventMessage(Action action, Event resource) {
+        ObjectReference involvedObject = resource.getInvolvedObject();
+        String kind = involvedObject.getKind();
+        log.debug("New event received :: action: " + action.name() + ", res: " + resource);
+        EventMessage event = EventMessage.builder().action(action.name())
+                .namespace(resource.getMetadata().getNamespace()).kind(resource.getKind()).refferedObjectKind(kind)
+                .reason(resource.getReason()).eventType(resource.getType()).lastTime(resource.getLastTimestamp())
+                .firstTime(resource.getFirstTimestamp()).message(resource.getMessage()).cluster(config.clusterName())
+                .resourceName(involvedObject.getName()).build();
+        log.info("New {} event received :: {}", action, event.eventDetailShort());
+        return event;
     }
 
-    private void sendNotification(EventMessage message) {
-        notificationPublisher.notifyEvent(message);
+    @Override
+    boolean isEventOld(Event type) {
+        return config.isOldEvent(type.getLastTimestamp());
     }
 }

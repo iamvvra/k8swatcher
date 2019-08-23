@@ -1,0 +1,16 @@
+package com.k8swatcher;
+
+import io.fabric8.kubernetes.api.model.Namespace;
+
+public class NamespaceWatcher extends ResourceWatcher<Namespace> {
+
+    public NamespaceWatcher(WatchConfig config, NotificationPublisher notificationPublisher) {
+        super(config, notificationPublisher);
+    }
+
+    @Override
+    public void eventReceived(Action action, Namespace resource) {
+        super.eventReceived(action, resource);
+    }
+
+}

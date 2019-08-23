@@ -3,8 +3,8 @@ package com.k8swatcher;
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -17,7 +17,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
-@JsonDeserialize(using = EventMessageDeserializer.class)
+@RegisterForReflection
 public class EventMessage implements Serializable {
     private static final long serialVersionUID = 1L;
     private String action;

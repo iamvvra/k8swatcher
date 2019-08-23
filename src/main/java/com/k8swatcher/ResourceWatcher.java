@@ -11,28 +11,12 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
 
     private static final Logger log = LoggerFactory.getLogger(ResourceWatcher.class);
 
-    private WatchConfig config;
+    protected WatchConfig config;
     private NotificationPublisher notificationPublisher;
 
     public ResourceWatcher(WatchConfig config, NotificationPublisher notificationPublisher) {
         this.config = config;
         this.notificationPublisher = notificationPublisher;
-    }
-
-    boolean isActionWatched(Action action) {
-        return action.equals(Action.MODIFIED) ? false : true;
-    }
-
-    boolean isHistoricEvent(T type) {
-        String deletionTime = deletionTime(type);
-        if (deletionTime != null) {
-            return config.isOldEvent(deletionTime);
-        }
-        return config.isOldEvent(creationTime(type));
-    }
-
-    boolean isWatchedResource(T resource) {
-        return config.isWatchedResource(resource.getKind());
     }
 
     @Override
@@ -41,7 +25,7 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
             log.debug("skip resource action, " + action + ", res, " + resource);
             return;
         }
-        if (isHistoricEvent(resource)) {
+        if (isEventOld(resource)) {
             log.debug("skip old resource events, action: " + action + ", res:" + resource.getKind());
             return;
         }
@@ -49,22 +33,27 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
             log.debug("skip unwatched resource, : action, " + action + ", res:" + resource.getKind());
             return;
         }
-        EventMessage newEventMessage = newEventMessage(action, resource);
+        notify(newEventMessage(action, resource));
+    }
+
+    protected void notify(EventMessage event) {
+        notificationPublisher.notifyEvent(event);
+    }
+
+    protected EventMessage newEventMessage(Action action, T resource) {
+        EventMessage newEventMessage = EventMessage.builder().action(action.name())
+                .namespace(resource.getMetadata().getNamespace()).kind(resource.getKind())
+                .creationTime(resource.getMetadata().getCreationTimestamp())
+                .deletedTime(resource.getMetadata().getDeletionTimestamp()).cluster(config.clusterName())
+                .resourceName(resource.getMetadata().getName()).build();
         log.debug("new object event received, " + action + ", " + resource);
         log.info("New {} event for {} received, {}", action, newEventMessage.getKind(),
                 newEventMessage.eventDetailShort());
-        processEvent(newEventMessage);
-    }
-
-    private EventMessage newEventMessage(Action action, T resource) {
-        return EventMessage.builder().action(action.name()).namespace(resource.getMetadata().getNamespace())
-                .kind(resource.getKind()).creationTime(resource.getMetadata().getCreationTimestamp())
-                .deletedTime(resource.getMetadata().getDeletionTimestamp()).cluster(config.clusterName())
-                .resourceName(resource.getMetadata().getName()).build();
+        return newEventMessage;
     }
 
     public void onClose(KubernetesClientException cause) {
-        cause.printStackTrace();
+        log.error("closing kubernetes client", cause);
     }
 
     String getLastTimestamp(T type) {
@@ -79,8 +68,19 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
         return type.getMetadata().getDeletionTimestamp();
     }
 
-    public void processEvent(EventMessage eventMessage) {
-        log.info("processing event, " + eventMessage.eventDetailShort());
-        notificationPublisher.notifyEvent(eventMessage);
+    boolean isActionWatched(Action action) {
+        return action.equals(Action.MODIFIED) ? false : true;
+    }
+
+    boolean isEventOld(T type) {
+        String deletionTime = deletionTime(type);
+        if (deletionTime != null) {
+            return config.isOldEvent(deletionTime);
+        }
+        return config.isOldEvent(creationTime(type));
+    }
+
+    boolean isWatchedResource(T resource) {
+        return config.isWatchedResource(resource.getKind());
     }
 }
