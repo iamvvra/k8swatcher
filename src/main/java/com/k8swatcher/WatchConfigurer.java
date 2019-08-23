@@ -120,10 +120,10 @@ public class WatchConfigurer {
                 case SERVICEACCOUNT:
                     resourceWatchMap.watchServiceAccounts().apply(client, ns);
                     break;
-                case RESOURCEQUOTAS:
+                case RESOURCEQUOTA:
                     resourceWatchMap.watchResourceQuotas().apply(client, ns);
                     break;
-                case ENDPOINTS:
+                case ENDPOINT:
                     resourceWatchMap.watchEndpoints().apply(client, ns);
                     break;
                 case LIMITRANGE:
