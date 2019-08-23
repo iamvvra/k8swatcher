@@ -28,7 +28,7 @@ public class EventsWatcher implements Watcher<Event> {
             return;
         }
         String lastTimestamp = resource.getLastTimestamp();
-        if (!watchConfig.isOldEvent(lastTimestamp)) {
+        if (watchConfig.isOldEvent(lastTimestamp)) {
             log.debug("Skipping old events, " + lastTimestamp);
             return;
         }

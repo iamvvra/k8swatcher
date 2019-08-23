@@ -45,6 +45,10 @@ public class WatchConfig {
 
     private ZonedDateTime startTime = ZonedDateTime.now(ZoneId.of("Z").normalized());
 
+    public ZonedDateTime startTime() {
+        return startTime;
+    }
+
     private final String startupMessage = ":eyes: `k8swatcher` started - cluster `%s`";
 
     private final String shutdownMessage = ":ghost: `k8swatcher` shutdown down - no events are notified for this cluster `%s`";
