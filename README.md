@@ -5,7 +5,7 @@
 Technically, the`k8swatcher` can connect & watch almost all the flavors of Kubernetes versions - vannila kubernetes, `Redhat Openshift`, AWS `eks`, Google `gke`, Azure `aks`, DigitalOcean or the Platform9 - additionaly, it works in `minikube` and `minisihft`, too. It was tested in `minikube`, `minishift`, Redhat Openshift, eks & gke clusters.
 
 
-The current version supports notifying events only to Mattermost.
+The current version supports notifying events to Mattermost & Slack.
 
 ## Setup
 The `k8swatcher` can be run in different ways.
