@@ -63,12 +63,12 @@ public class MattermostClient {
 
     public void post(Post post) throws IOException {
         log.debug("create the post, " + post.toString());
-        String postBody = new ObjectMapper().writeValueAsString(post);
+        String postBody = mapper.writeValueAsString(post);
         RequestBody body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), postBody);
         Request request = createRequest("/posts", "POST", body);
-        log.debug("create post request\nresponse-code: {}\n{}\n{}", request.url(), request.headers(), postBody);
+
         Response resp = httpClient.newCall(request).execute();
-        log.debug("create post response\n{}\n{}\n{}", resp.code(), resp.headers(), resp.body().string());
+        log.debug("create mattermost post response\n{}\n{}\n{}", resp.code(), resp.headers(), resp.body().string());
         resp.close();
     }
 }

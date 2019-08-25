@@ -1,6 +1,7 @@
 package com.k8swatcher;
 
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -12,12 +13,12 @@ import lombok.Getter;
 import lombok.ToString;
 
 @Builder
-@Getter
 @ToString
 @EqualsAndHashCode
 @JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 @RegisterForReflection
+@Getter
 public class EventMessage implements Serializable {
     private static final long serialVersionUID = 1L;
     private String action;
@@ -70,20 +71,19 @@ public class EventMessage implements Serializable {
     public String message() {
         String msg = "";
         if (isWarning() && isEvent()) {
-            msg = String.format("%s `%s` has error, namespace `%s`, cluster `%s`\n`%s`", kind(), resourceName,
-                    namespace, cluster, time());
+            msg = String.format("%s `%s` has error, namespace `%s`, cluster `%s`", kind(), resourceName, namespace,
+                    cluster);
         } else {
-            msg = String.format("%s `%s` was %s in `%s` namespace of cluster `%s`\nTime `%s`", kind(), resourceName,
-                    action.toLowerCase(), namespace, cluster, time());
+            msg = String.format("%s `%s` was %s in `%s` namespace of cluster `%s`", kind(), resourceName,
+                    action.toLowerCase(), namespace, cluster);
         }
         if (message != null && !message.isEmpty()) {
-            msg += String.format("\n`%s`", message);
+            msg += String.format("\nCause, `%s`", message);
         }
         return msg;
-
     }
 
-    private String time() {
+    public String time() {
         if (isEvent())
             return lastTime;
         if ("DELETED".equals(action))
@@ -93,7 +93,11 @@ public class EventMessage implements Serializable {
         return creationTime;
     }
 
-    private String kind() {
+    public long timeInEpochSecond() {
+        return ZonedDateTime.parse(time()).toEpochSecond();
+    }
+
+    public String kind() {
         return isEvent() ? refferedObjectKind : kind;
     }
 

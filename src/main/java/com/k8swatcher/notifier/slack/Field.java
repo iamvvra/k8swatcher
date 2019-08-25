@@ -1,14 +1,18 @@
-package com.k8swatcher.notifier.mattermost;
+package com.k8swatcher.notifier.slack;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+import lombok.Getter;
+import lombok.ToString;
+
+@ToString
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 @Getter
-@Setter
-public class Field {
+public class Field implements Serializable {
 
     public Boolean _short;
     public String title;

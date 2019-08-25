@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -17,6 +18,7 @@ import lombok.ToString;
 @ToString
 @RegisterForReflection
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@Getter
 public class Attachment implements Serializable {
 
     private static final long serialVersionUID = 1L;

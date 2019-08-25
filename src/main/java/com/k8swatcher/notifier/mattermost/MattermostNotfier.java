@@ -78,19 +78,16 @@ public class MattermostNotfier implements Notifier {
     }
 
     @Override
-    public void sendNotification(String message, Level level) {
-        try {
-            Post post = newPost("");
-            post.attach(createAttachment("", getColor(level), message));
-            mattermostClient.post(post);
-        } catch (IOException e) {
-            log.error("Error sending message", e);
-        }
+    public void sendNotification(String message, Level level) throws IOException {
+        Post post = newPost("");
+        post.attach(createAttachment("", getColor(level), message));
+        mattermostClient.post(post);
     }
 
     private Post postWithAttachment(EventMessage eventMessage) {
         Post post = newPost(null);
-        post.attach(createAttachment(eventMessage.title(), getColor(eventMessage), eventMessage.message()));
+        post.attach(createAttachment(eventMessage.title(), getColor(eventMessage),
+                (eventMessage.message() + "\nTime `" + eventMessage.time() + "`")));
         return post;
     }
 

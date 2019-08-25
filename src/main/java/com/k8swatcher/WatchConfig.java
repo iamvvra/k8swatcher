@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 public class WatchConfig {
     private static final Logger log = LoggerFactory.getLogger(WatchConfig.class);
 
+    private final String startupMessage = ":eyes: `k8swatcher` started - cluster `%s`";
+
+    private final String shutdownMessage = ":ghost: `k8swatcher` shutdown down - no events are notified for this cluster `%s`";
+
     @Inject
     @ConfigProperty(name = "k8swatcher.resources", defaultValue = "ALL")
     private Set<String> resources;
@@ -45,13 +49,12 @@ public class WatchConfig {
 
     private ZonedDateTime startTime = ZonedDateTime.now(ZoneId.of("Z").normalized());
 
+    @ConfigProperty(name = "k8swatcher.slack-enabled", defaultValue = "false")
+    private boolean slackEnabled;
+
     public ZonedDateTime startTime() {
         return startTime;
     }
-
-    private final String startupMessage = ":eyes: `k8swatcher` started - cluster `%s`";
-
-    private final String shutdownMessage = ":ghost: `k8swatcher` shutdown down - no events are notified for this cluster `%s`";
 
     public Set<String> getNamespaces() {
         return Collections.unmodifiableSet(namespaces);
@@ -102,6 +105,10 @@ public class WatchConfig {
 
     public String shutdownMessage() {
         return shutdownMessage;
+    }
+
+    public boolean isSlackEnabled() {
+        return slackEnabled;
     }
 
 }

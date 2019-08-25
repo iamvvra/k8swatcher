@@ -1,5 +1,6 @@
 package com.k8swatcher;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -149,8 +150,6 @@ public class WatchConfigurer {
                     .collect(Collectors.toList());
             log.debug("No namespace provided, watching events from all namespaces" + nses);
             resourceWatchMap.watchEvents().apply(client, null);
-            // client.events().inAnyNamespace().watch(new EventsWatcher(watchConfig,
-            // notificationPublisher));
         } else {
             log.info("Registering event watchers for namespaces - " + watchConfig.getNamespaces());
             watchConfig.getNamespaces().stream().forEach(ns -> resourceWatchMap.watchEvents().apply(client, ns));
@@ -158,12 +157,12 @@ public class WatchConfigurer {
     }
 
     @PostConstruct
-    public void init() {
+    public void init() throws IOException {
         String startMsg = String.format(watchConfig.startupMessage(), watchConfig.clusterName());
         notificationPublisher.sendMessage(startMsg, Level.NORMAL);
     }
 
-    public void destroy(@Observes ShutdownEvent _e) {
+    public void destroy(@Observes ShutdownEvent _e) throws IOException {
         log.info("k8swatcher shutting down");
         notificationPublisher.sendMessage(String.format(watchConfig.shutdownMessage(), watchConfig.clusterName()),
                 Level.WARNING);

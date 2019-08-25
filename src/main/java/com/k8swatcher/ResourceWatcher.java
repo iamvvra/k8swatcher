@@ -47,7 +47,7 @@ public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
                 .deletedTime(resource.getMetadata().getDeletionTimestamp()).cluster(config.clusterName())
                 .resourceName(resource.getMetadata().getName()).build();
         log.debug("new object event received, " + action + ", " + resource);
-        log.info("New {} event for {} received, {}", action, newEventMessage.getKind(),
+        log.info("New {} event for {} received, {}", action, newEventMessage.kind(),
                 newEventMessage.eventDetailShort());
         return newEventMessage;
     }
