@@ -1,5 +1,6 @@
 package com.k8swatcher;
 
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -7,6 +8,7 @@ import javax.inject.Inject;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
+import io.fabric8.openshift.client.OpenShiftClient;
 
 @ApplicationScoped
 public class ResourceWatchMap {
@@ -278,10 +280,47 @@ public class ResourceWatchMap {
     }
 
     public BiFunction<KubernetesClient, String, Watch> watchDisruptionBudgets() {
-        return (kClient, ns) -> {
-            return kClient.policy().podDisruptionBudget()
-                    .watch(new DisruptionBudgetWatcher(config, notificationPublisher));
+        return (kClient, ns) -> kClient.policy().podDisruptionBudget()
+                .watch(new DisruptionBudgetWatcher(config, notificationPublisher));
+    }
 
-        };
+    public BiFunction<KubernetesClient, String, Watch> watchBuilds() {
+        return (osClient, ns) -> Optional.of(ns)
+                .map(n -> osClient.adapt(OpenShiftClient.class).builds().inNamespace(n)
+                        .watch(new BuildWatcher(config, notificationPublisher)))
+                .orElse(osClient.adapt(OpenShiftClient.class).builds().inAnyNamespace()
+                        .watch(new BuildWatcher(config, notificationPublisher)));
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchBuildConfig() {
+        return (osClient, ns) -> Optional.of(ns)
+                .map(n -> osClient.adapt(OpenShiftClient.class).buildConfigs().inNamespace(n)
+                        .watch(new BuildConfigWatcher(config, notificationPublisher)))
+                .orElse(osClient.adapt(OpenShiftClient.class).buildConfigs().inAnyNamespace()
+                        .watch(new BuildConfigWatcher(config, notificationPublisher)));
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchImageStream() {
+        return (osClient, ns) -> Optional.of(ns)
+                .map(n -> osClient.adapt(OpenShiftClient.class).imageStreams().inNamespace(n)
+                        .watch(new ImageStreamWatcher(config, notificationPublisher)))
+                .orElse(osClient.adapt(OpenShiftClient.class).imageStreams().inAnyNamespace()
+                        .watch(new ImageStreamWatcher(config, notificationPublisher)));
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchImageStreamTag() {
+        return (osClient, ns) -> Optional.of(ns)
+                .map(n -> osClient.adapt(OpenShiftClient.class).imageStreamTags().inNamespace(n)
+                        .watch(new ImageStreamTagWatcher(config, notificationPublisher)))
+                .orElse(osClient.adapt(OpenShiftClient.class).imageStreamTags().inAnyNamespace()
+                        .watch(new ImageStreamTagWatcher(config, notificationPublisher)));
+    }
+
+    public BiFunction<KubernetesClient, String, Watch> watchDeploymentConfig() {
+        return (osClient, ns) -> Optional.of(ns)
+                .map(n -> osClient.adapt(OpenShiftClient.class).deploymentConfigs().inNamespace(n)
+                        .watch(new DeploymentConfigWatcher(config, notificationPublisher)))
+                .orElse(osClient.adapt(OpenShiftClient.class).deploymentConfigs().inAnyNamespace()
+                        .watch(new DeploymentConfigWatcher(config, notificationPublisher)));
     }
 }

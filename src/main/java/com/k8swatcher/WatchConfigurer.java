@@ -3,6 +3,7 @@ package com.k8swatcher;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.Watch;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 
@@ -47,100 +49,83 @@ public class WatchConfigurer {
         }
         namespaces.stream().forEach(ns -> {
             watchConfig.watchedResources().stream().forEach(res -> {
-                Resource object = Resource.valueOf(res);
-                log.debug("register watcher for object, " + object.name());
-                switch (object) {
-                case ALL:
-                    break;
-                case POD:
-                    resourceWatchMap.watchPods().apply(client, ns);
-                    break;
-                case SERVICE:
-                    resourceWatchMap.watchServices().apply(client, ns);
-                    break;
-                case PERSISTENTVOLUMECLAIM:
-                    resourceWatchMap.watchPVCs().apply(client, ns);
-                    break;
-                case SECRET:
-                    resourceWatchMap.watchSecrets().apply(client, ns);
-                    break;
-                case CONFIGMAP:
-                    resourceWatchMap.watchConfigmaps().apply(client, ns);
-                    break;
-                case JOB:
-                    resourceWatchMap.watchJobs().apply(client, ns);
-                    break;
-                case CRONJOB:
-                    resourceWatchMap.watchCronJobs().apply(client, ns);
-                    break;
-                case HORIZONTALPODAUTOSCALER:
-                    resourceWatchMap.watchHorizontalPodAutoScalers().apply(client, ns);
-                    break;
-                case BUILD:
-                    log.debug("openshift build, TODO");
-                    break;
-                case DEPLOYMENTCONFIG:
-                    log.debug("openshift dc, TODO");
-                    break;
-                case DEPLOYMENT:
-                    resourceWatchMap.watchDeployments().apply(client, ns);
-                    break;
-                case STATEFULSET:
-                    resourceWatchMap.watchStatefulsets().apply(client, ns);
-                    break;
-                case INGRESS:
-                    resourceWatchMap.watchIngresses().apply(client, ns);
-                    break;
-                case NODE:
-                    resourceWatchMap.watchNodes().apply(client, ns);
-                    break;
-                case NAMESPACE:
-                    resourceWatchMap.watchNamespaces().apply(client, ns);
-                    break;
-                case PERSISTENTVOLUME:
-                    resourceWatchMap.watchPVs().apply(client, ns);
-                    break;
-                case DAEMONSET:
-                    resourceWatchMap.watchDaemonsets().apply(client, ns);
-                    break;
-                case ROLE:
-                    resourceWatchMap.watchRoles().apply(client, ns);
-                    break;
-                case ROLEBINDING:
-                    resourceWatchMap.watchRoleBindings().apply(client, ns);
-                    break;
-                case CLUSTERROLE:
-                    resourceWatchMap.watchClusterRoles().apply(client, ns);
-                    break;
-                case CLUSTERROLEBINDING:
-                    resourceWatchMap.watchClusterRoleBindings().apply(client, ns);
-                    break;
-                case REPLICATIONCONTROLLER:
-                    resourceWatchMap.watchReplicationControllers().apply(client, ns);
-                    break;
-                case SERVICEACCOUNT:
-                    resourceWatchMap.watchServiceAccounts().apply(client, ns);
-                    break;
-                case RESOURCEQUOTA:
-                    resourceWatchMap.watchResourceQuotas().apply(client, ns);
-                    break;
-                case ENDPOINT:
-                    resourceWatchMap.watchEndpoints().apply(client, ns);
-                    break;
-                case LIMITRANGE:
-                    resourceWatchMap.watchLimitRanges().apply(client, ns);
-                    break;
-                case REPLICASET:
-                    resourceWatchMap.watchReplicaSets().apply(client, ns);
-                    break;
-                case EVENT:
-                    resourceWatchMap.watchEvents().apply(client, ns);
-                    break;
-                default:
-                    break;
-                }
+                log.debug("starting watcher for {} in {} " + res, ns);
+                watchFn(res).apply(client, ns);
             });
         });
+        log.info("All watchers strted");
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchFn(String res) {
+        Resource object = Resource.valueOf(res);
+        switch (object) {
+        case ALL:
+            return null;
+        case POD:
+            return resourceWatchMap.watchPods();
+        case SERVICE:
+            return resourceWatchMap.watchServices();
+        case PERSISTENTVOLUMECLAIM:
+            return resourceWatchMap.watchPVCs();
+        case SECRET:
+            return resourceWatchMap.watchSecrets();
+        case CONFIGMAP:
+            return resourceWatchMap.watchConfigmaps();
+        case JOB:
+            return resourceWatchMap.watchJobs();
+        case CRONJOB:
+            return resourceWatchMap.watchCronJobs();
+        case HORIZONTALPODAUTOSCALER:
+            return resourceWatchMap.watchHorizontalPodAutoScalers();
+        case BUILD:
+            return resourceWatchMap.watchBuilds();
+        case BUILDCONFIG:
+            return resourceWatchMap.watchBuildConfig();
+        case DEPLOYMENTCONFIG:
+            return resourceWatchMap.watchDeploymentConfig();
+        case IMAGESTREAM:
+            return resourceWatchMap.watchImageStream();
+        case IMAGESTREAMTAG:
+            return resourceWatchMap.watchImageStreamTag();
+        case DEPLOYMENT:
+            return resourceWatchMap.watchDeployments();
+        case STATEFULSET:
+            return resourceWatchMap.watchStatefulsets();
+        case INGRESS:
+            return resourceWatchMap.watchIngresses();
+        case NODE:
+            return resourceWatchMap.watchNodes();
+        case NAMESPACE:
+            return resourceWatchMap.watchNamespaces();
+        case PERSISTENTVOLUME:
+            return resourceWatchMap.watchPVs();
+        case DAEMONSET:
+            return resourceWatchMap.watchDaemonsets();
+        case ROLE:
+            return resourceWatchMap.watchRoles();
+        case ROLEBINDING:
+            return resourceWatchMap.watchRoleBindings();
+        case CLUSTERROLE:
+            return resourceWatchMap.watchClusterRoles();
+        case CLUSTERROLEBINDING:
+            return resourceWatchMap.watchClusterRoleBindings();
+        case REPLICATIONCONTROLLER:
+            return resourceWatchMap.watchReplicationControllers();
+        case SERVICEACCOUNT:
+            return resourceWatchMap.watchServiceAccounts();
+        case RESOURCEQUOTA:
+            return resourceWatchMap.watchResourceQuotas();
+        case ENDPOINT:
+            return resourceWatchMap.watchEndpoints();
+        case LIMITRANGE:
+            return resourceWatchMap.watchLimitRanges();
+        case REPLICASET:
+            return resourceWatchMap.watchReplicaSets();
+        case EVENT:
+            return resourceWatchMap.watchEvents();
+        default:
+            return null;
+        }
     }
 
     public void registerEventWatch(@Observes StartupEvent _e) {
