@@ -21,7 +21,7 @@ public class WatchConfig {
 
     private final String startupMessage = ":eyes: `k8swatcher` started - cluster `%s`";
 
-    private final String shutdownMessage = ":ghost: `k8swatcher` shutdown down - no events are notified for this cluster `%s`";
+    private final String shutdownMessage = ":ghost: `k8swatcher` shutdown down - no events of `%s` cluster are notified";
 
     @Inject
     @ConfigProperty(name = "k8swatcher.resources", defaultValue = "ALL")
