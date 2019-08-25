@@ -4,6 +4,7 @@
 
 Technically, the`k8swatcher` can connect & watch almost all the flavors of Kubernetes versions - vannila kubernetes, `Redhat Openshift`, AWS `eks`, Google `gke`, Azure `aks`, DigitalOcean or the Platform9 - additionaly, it works in `minikube` and `minisihft`, too. It was tested in `minikube`, `minishift`, Redhat Openshift, eks & gke clusters.
 
+
 The current version supports notifying events only to Mattermost.
 
 ## Setup
@@ -110,7 +111,7 @@ k8swatcher.resources=POD,SERVICE,INGRESS,NAMESPACE,ENDPOINTS,CONFIGMAP,SECRET,DE
 # the name you wish this cluster to be identified, ex., dev-cluster, us-east-eks-prod-cluster
 k8swatcher.cluster-name=unnamed-cluster
 ```
-Notification properties - the present version supports only Mattermost. The Mattermost should be reachable from the host the `k8swatcher` runs.
+Notification propertis - The Mattermost should be reachable from the host the `k8swatcher` runs.
 ```properties
 # enable to notify to Mattermost, if false, no events are notified
 k8swatcher.mattermost-enabled=true
@@ -128,11 +129,23 @@ k8swatcher.mattermost-channel-id=h3t8gjwq1i85uq6zkj3dp1qgxr
 k8swatcher.mattermost-user-display-name=k8swatcher
 ```
 
+Slack properties - 
+```properties
+# Enable notitications to Slack, false disables. Note, you can enable notifications to multiple channels, Slack as well as Mattermost.
+k8swatcher.slack-enabled=true
+# Slack auth token, the Slack user of this token should have chat:write:bot permission
+# Refer to the Slack docs https://api.slack.com/start/overview
+k8swatcher.slack-api-token=
+# The channel-id to which the event messages are sent. 
+# In Slack client, right click the channel to which you want to send the notifications, click Copy Link, https://k8swatcher.slack.com/messages/<this-is-your-channel-id>
+k8swatcher.slack-channel-id=
+```
+
 ### TODO
 
  - [x] Developer integration tools
 	 - [x] Mattermost
-	 - [ ] Slack
+	 - [x] Slack
 	 - [ ] Elasticsearch
 	 - [ ] Rocketchat
 	 - [ ] Email
