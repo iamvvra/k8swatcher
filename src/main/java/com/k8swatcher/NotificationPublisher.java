@@ -9,20 +9,18 @@ import com.k8swatcher.notifier.Level;
 import com.k8swatcher.notifier.mattermost.MattermostNotfier;
 import com.k8swatcher.notifier.slack.SlackNotifier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.vertx.core.eventbus.EventBus;
+import lombok.extern.slf4j.Slf4j;
 
 @ApplicationScoped
+@Slf4j
 public class NotificationPublisher {
 
-    private static final Logger log = LoggerFactory.getLogger(NotificationPublisher.class);
-
     private WatchConfig config;
+    private EventBus eventBus;
+
     private MattermostNotfier mattermostNotfier;
     private SlackNotifier slackNotifier;
-    private EventBus eventBus;
 
     @Inject
     public NotificationPublisher(WatchConfig config, MattermostNotfier mattermostNotfier, SlackNotifier slackNotifier,
@@ -34,16 +32,16 @@ public class NotificationPublisher {
     }
 
     public void notifyEvent(EventMessage event) {
-        notifyMattermost(event);
+        notifyEnabledChannels(event);
     }
 
-    private void notifyMattermost(EventMessage event) {
+    private void notifyEnabledChannels(EventMessage event) {
         if (config.isMatterMostEnabled()) {
-            log.debug("Notifying {} event to Mattermost", event.kind());
+            log.debug("Notifying {}-{} event to {} channel", event.getAction(), event.kind(), "mattermost");
             eventBus.send("mattermost", JsonUtil.asJsonString(event));
         }
         if (config.isSlackEnabled()) {
-            log.debug("Notifying {} event to slack", event.kind());
+            log.debug("Notifying {}-{} event to {} channel", event.getAction(), event.kind(), "slack");
             eventBus.send("slack", JsonUtil.asJsonString(event));
         }
     }

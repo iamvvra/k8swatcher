@@ -1,7 +1,10 @@
 package com.k8swatcher;
 
+import javax.enterprise.context.Dependent;
+
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 
+@Dependent
 public class DeploymentWatcher extends ResourceWatcher<Deployment> {
 
     public DeploymentWatcher(WatchConfig config, NotificationPublisher notificationPublisher) {

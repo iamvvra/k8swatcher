@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
 import com.k8swatcher.notifier.Level;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.Vertx;
 
 @ApplicationScoped
 public class WatchConfigurer {
@@ -30,117 +32,135 @@ public class WatchConfigurer {
     private NotificationPublisher notificationPublisher;
 
     @Inject
+    private Instance<ResourceWatcher<?>> resourceWatcher;
+
+    @Inject
+    private Vertx vertx;
+
+    @Inject
     public WatchConfigurer(KubernetesClient client, WatchConfig watchConfig, ResourceWatchMap resourceWatchMap,
             NotificationPublisher notificationPublisher) {
         this.client = client;
         this.watchConfig = watchConfig;
         this.resourceWatchMap = resourceWatchMap;
         this.notificationPublisher = notificationPublisher;
+        // VertxOptions options = new VertxOptions().setMetricsOptions(new
+        // MetricsOptions().setEnabled(true));
+        // vertx = Vertx.vertx(options);
     }
 
     public void registerResourceWatch(@Observes StartupEvent _e) {
-        Set<String> namespaces = watchConfig.getNamespaces();
+        Set<String> namespaces = getWatchedNamespaceList();
         log.info("Registering watchers for objects, {}, in namespaces {}", watchConfig.watchedResources(), namespaces);
+        namespaces.stream().forEach(ns -> {
+            watchConfig.watchedResources().stream().forEach(res -> {
+                createWatchVerticle(res, ns);
+            });
+        });
+    }
+
+    private void createWatchVerticle(String res, String namespace) {
+        Resource object = Resource.valueOf(res);
+        log.debug("watching {} in namespace {}, " + object.name(), namespace);
+        switch (object) {
+        case ALL:
+            break;
+        case POD:
+            resourceWatchMap.watchPods().accept(client, namespace);
+            break;
+        case SERVICE:
+            resourceWatchMap.watchServices().accept(client, namespace);
+            break;
+        case PERSISTENTVOLUMECLAIM:
+            resourceWatchMap.watchPVCs().accept(client, namespace);
+            break;
+        case SECRET:
+            resourceWatchMap.watchSecrets().accept(client, namespace);
+            break;
+        case CONFIGMAP:
+            resourceWatchMap.watchConfigmaps().accept(client, namespace);
+            break;
+        case JOB:
+            resourceWatchMap.watchJobs().accept(client, namespace);
+            break;
+        case CRONJOB:
+            resourceWatchMap.watchCronJobs().accept(client, namespace);
+            break;
+        case HORIZONTALPODAUTOSCALER:
+            resourceWatchMap.watchHorizontalPodAutoScalers().accept(client, namespace);
+            break;
+        case BUILD:
+            log.debug("openshift build, TODO");
+            break;
+        case DEPLOYMENTCONFIG:
+            log.debug("openshift dc, TODO");
+            break;
+        case DEPLOYMENT:
+            resourceWatchMap.watchDeployments().accept(client, namespace);
+            break;
+        case STATEFULSET:
+            resourceWatchMap.watchStatefulsets().accept(client, namespace);
+            break;
+        case INGRESS:
+            resourceWatchMap.watchIngresses().accept(client, namespace);
+            break;
+        case NODE:
+            resourceWatchMap.watchNodes().accept(client, namespace);
+            break;
+        case NAMESPACE:
+            resourceWatchMap.watchNamespaces().accept(client, namespace);
+            break;
+        case PERSISTENTVOLUME:
+            resourceWatchMap.watchPVs().accept(client, namespace);
+            break;
+        case DAEMONSET:
+            resourceWatchMap.watchDaemonsets().accept(client, namespace);
+            break;
+        case ROLE:
+            resourceWatchMap.watchRoles().accept(client, namespace);
+            break;
+        case ROLEBINDING:
+            resourceWatchMap.watchRoleBindings().accept(client, namespace);
+            break;
+        case CLUSTERROLE:
+            resourceWatchMap.watchClusterRoles().accept(client, namespace);
+            break;
+        case CLUSTERROLEBINDING:
+            resourceWatchMap.watchClusterRoleBindings().accept(client, namespace);
+            break;
+        case REPLICATIONCONTROLLER:
+            resourceWatchMap.watchReplicationControllers().accept(client, namespace);
+            break;
+        case SERVICEACCOUNT:
+            resourceWatchMap.watchServiceAccounts().accept(client, namespace);
+            break;
+        case RESOURCEQUOTA:
+            resourceWatchMap.watchResourceQuotas().accept(client, namespace);
+            break;
+        case ENDPOINT:
+            resourceWatchMap.watchEndpoints().accept(client, namespace);
+            break;
+        case LIMITRANGE:
+            resourceWatchMap.watchLimitRanges().accept(client, namespace);
+            break;
+        case REPLICASET:
+            resourceWatchMap.watchReplicaSets().accept(client, namespace);
+            break;
+        case EVENT:
+            resourceWatchMap.watchEvents().accept(client, namespace);
+            break;
+        default:
+            break;
+        }
+    }
+
+    private Set<String> getWatchedNamespaceList() {
+        Set<String> namespaces = watchConfig.getNamespaces();
         if (watchConfig.watchAllNamespaces()) {
             namespaces = client.namespaces().list().getItems().stream().map(n -> n.getMetadata().getName())
                     .collect(Collectors.toSet());
         }
-        namespaces.stream().forEach(ns -> {
-            watchConfig.watchedResources().stream().forEach(res -> {
-                Resource object = Resource.valueOf(res);
-                log.debug("register watcher for object, " + object.name());
-                switch (object) {
-                case ALL:
-                    break;
-                case POD:
-                    resourceWatchMap.watchPods().apply(client, ns);
-                    break;
-                case SERVICE:
-                    resourceWatchMap.watchServices().apply(client, ns);
-                    break;
-                case PERSISTENTVOLUMECLAIM:
-                    resourceWatchMap.watchPVCs().apply(client, ns);
-                    break;
-                case SECRET:
-                    resourceWatchMap.watchSecrets().apply(client, ns);
-                    break;
-                case CONFIGMAP:
-                    resourceWatchMap.watchConfigmaps().apply(client, ns);
-                    break;
-                case JOB:
-                    resourceWatchMap.watchJobs().apply(client, ns);
-                    break;
-                case CRONJOB:
-                    resourceWatchMap.watchCronJobs().apply(client, ns);
-                    break;
-                case HORIZONTALPODAUTOSCALER:
-                    resourceWatchMap.watchHorizontalPodAutoScalers().apply(client, ns);
-                    break;
-                case BUILD:
-                    log.debug("openshift build, TODO");
-                    break;
-                case DEPLOYMENTCONFIG:
-                    log.debug("openshift dc, TODO");
-                    break;
-                case DEPLOYMENT:
-                    resourceWatchMap.watchDeployments().apply(client, ns);
-                    break;
-                case STATEFULSET:
-                    resourceWatchMap.watchStatefulsets().apply(client, ns);
-                    break;
-                case INGRESS:
-                    resourceWatchMap.watchIngresses().apply(client, ns);
-                    break;
-                case NODE:
-                    resourceWatchMap.watchNodes().apply(client, ns);
-                    break;
-                case NAMESPACE:
-                    resourceWatchMap.watchNamespaces().apply(client, ns);
-                    break;
-                case PERSISTENTVOLUME:
-                    resourceWatchMap.watchPVs().apply(client, ns);
-                    break;
-                case DAEMONSET:
-                    resourceWatchMap.watchDaemonsets().apply(client, ns);
-                    break;
-                case ROLE:
-                    resourceWatchMap.watchRoles().apply(client, ns);
-                    break;
-                case ROLEBINDING:
-                    resourceWatchMap.watchRoleBindings().apply(client, ns);
-                    break;
-                case CLUSTERROLE:
-                    resourceWatchMap.watchClusterRoles().apply(client, ns);
-                    break;
-                case CLUSTERROLEBINDING:
-                    resourceWatchMap.watchClusterRoleBindings().apply(client, ns);
-                    break;
-                case REPLICATIONCONTROLLER:
-                    resourceWatchMap.watchReplicationControllers().apply(client, ns);
-                    break;
-                case SERVICEACCOUNT:
-                    resourceWatchMap.watchServiceAccounts().apply(client, ns);
-                    break;
-                case RESOURCEQUOTA:
-                    resourceWatchMap.watchResourceQuotas().apply(client, ns);
-                    break;
-                case ENDPOINT:
-                    resourceWatchMap.watchEndpoints().apply(client, ns);
-                    break;
-                case LIMITRANGE:
-                    resourceWatchMap.watchLimitRanges().apply(client, ns);
-                    break;
-                case REPLICASET:
-                    resourceWatchMap.watchReplicaSets().apply(client, ns);
-                    break;
-                case EVENT:
-                    resourceWatchMap.watchEvents().apply(client, ns);
-                    break;
-                default:
-                    break;
-                }
-            });
-        });
+        return namespaces;
     }
 
     public void registerEventWatch(@Observes StartupEvent _e) {
@@ -149,23 +169,24 @@ public class WatchConfigurer {
             List<String> nses = client.namespaces().list().getItems().stream().map(ns -> ns.getMetadata().getName())
                     .collect(Collectors.toList());
             log.debug("No namespace provided, watching events from all namespaces" + nses);
-            resourceWatchMap.watchEvents().apply(client, null);
+            resourceWatchMap.watchEvents().accept(client, null);
         } else {
             log.info("Registering event watchers for namespaces - " + watchConfig.getNamespaces());
-            watchConfig.getNamespaces().stream().forEach(ns -> resourceWatchMap.watchEvents().apply(client, ns));
+            watchConfig.getNamespaces().stream().forEach(ns -> {
+                resourceWatchMap.watchEvents().accept(client, ns);
+            });
         }
     }
 
     @PostConstruct
     public void init() throws IOException {
-        String startMsg = String.format(watchConfig.startupMessage(), watchConfig.clusterName());
-        notificationPublisher.sendMessage(startMsg, Level.NORMAL);
+        notificationPublisher.sendMessage(watchConfig.startupMessage(), Level.NORMAL);
     }
 
     public void destroy(@Observes ShutdownEvent _e) throws IOException {
         log.info("k8swatcher shutting down");
-        notificationPublisher.sendMessage(String.format(watchConfig.shutdownMessage(), watchConfig.clusterName()),
-                Level.WARNING);
+        notificationPublisher.sendMessage(watchConfig.shutdownMessage(), Level.WARNING);
+        vertx.close();
     }
 
 }

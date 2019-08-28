@@ -100,11 +100,11 @@ public class WatchConfig {
     }
 
     public String startupMessage() {
-        return startupMessage;
+        return String.format(startupMessage, clusterName);
     }
 
     public String shutdownMessage() {
-        return shutdownMessage;
+        return String.format(shutdownMessage, clusterName);
     }
 
     public boolean isSlackEnabled() {

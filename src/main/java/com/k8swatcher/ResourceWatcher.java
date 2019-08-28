@@ -1,54 +1,59 @@
 package com.k8swatcher;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.enterprise.context.Dependent;
+import javax.inject.Inject;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.Watcher;
+import io.vertx.reactivex.core.eventbus.EventBus;
+import lombok.extern.slf4j.Slf4j;
 
-public class ResourceWatcher<T extends HasMetadata> implements Watcher<T> {
-
-    private static final Logger log = LoggerFactory.getLogger(ResourceWatcher.class);
+@Dependent
+@Slf4j
+public class ResourceWatcher<T extends HasMetadata> extends WatchVerticle implements Watcher<T> {
 
     protected WatchConfig config;
-    private NotificationPublisher notificationPublisher;
 
+    @Inject
+    private EventBus eventBus;
+
+    @Inject
     public ResourceWatcher(WatchConfig config, NotificationPublisher notificationPublisher) {
+        super(notificationPublisher);
         this.config = config;
-        this.notificationPublisher = notificationPublisher;
     }
 
     @Override
     public void eventReceived(Action action, T resource) {
         if (!isActionWatched(action)) {
-            log.debug("skip resource action, " + action + ", res, " + resource);
+            log.debug("skip {} {} action, ", resource.getKind(), action);
             return;
         }
         if (isEventOld(resource)) {
-            log.debug("skip old resource events, action: " + action + ", res:" + resource.getKind());
+            log.debug("skip old {} {} event", resource.getKind(), action);
             return;
         }
         if (!isWatchedResource(resource)) {
-            log.debug("skip unwatched resource, : action, " + action + ", res:" + resource.getKind());
+            log.debug("skip unwatched object {}, {}", resource.getKind(), action);
             return;
         }
-        notify(newEventMessage(action, resource));
+        notify(action, resource);
     }
 
-    protected void notify(EventMessage event) {
-        notificationPublisher.notifyEvent(event);
+    protected EventBus notify(Action action, T resource) {
+        log.debug("sending {} {} to address {}, in eventbus ", resource.getKind(), action, getAddress());
+        return eventBus.send(getAddress(), JsonUtil.asJsonString(newEventMessage(action, resource)));
     }
 
-    protected EventMessage newEventMessage(Action action, T resource) {
+    EventMessage newEventMessage(Action action, T resource) {
         EventMessage newEventMessage = EventMessage.builder().action(action.name())
                 .namespace(resource.getMetadata().getNamespace()).kind(resource.getKind())
                 .creationTime(resource.getMetadata().getCreationTimestamp())
                 .deletedTime(resource.getMetadata().getDeletionTimestamp()).cluster(config.clusterName())
                 .resourceName(resource.getMetadata().getName()).build();
-        log.debug("new object event received, " + action + ", " + resource);
-        log.info("New {} event for {} received, {}", action, newEventMessage.kind(),
-                newEventMessage.eventDetailShort());
+        log.info("new {} {} event received", resource.getKind(), action);
+        log.debug("new {} {} event received, {}", newEventMessage.kind(), action, newEventMessage.eventDetailShort());
         return newEventMessage;
     }
 

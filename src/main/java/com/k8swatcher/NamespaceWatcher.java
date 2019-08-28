@@ -1,7 +1,10 @@
 package com.k8swatcher;
 
+import javax.enterprise.context.Dependent;
+
 import io.fabric8.kubernetes.api.model.Namespace;
 
+@Dependent
 public class NamespaceWatcher extends ResourceWatcher<Namespace> {
 
     public NamespaceWatcher(WatchConfig config, NotificationPublisher notificationPublisher) {
