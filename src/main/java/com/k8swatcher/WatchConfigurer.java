@@ -90,10 +90,31 @@ public class WatchConfigurer {
             resourceWatchMap.watchHorizontalPodAutoScalers().accept(client, namespace);
             break;
         case BUILD:
-            log.debug("openshift build, TODO");
+            resourceWatchMap.watchBuild().accept(client, namespace);
             break;
         case DEPLOYMENTCONFIG:
-            log.debug("openshift dc, TODO");
+            resourceWatchMap.watchDeploymentConfig().accept(client, namespace);
+            break;
+        case GROUP:
+            resourceWatchMap.watchGroup().accept(client, namespace);
+            break;
+        case IMAGESTREAM:
+            resourceWatchMap.watchImageStream().accept(client, namespace);
+            break;
+        case IMAGESTREAMTAG:
+            resourceWatchMap.watchImageStreamTag().accept(client, namespace);
+            break;
+        case OAUTHCLIENT:
+            resourceWatchMap.watchOAuthClient().accept(client, namespace);
+            break;
+        case PROJECT:
+            resourceWatchMap.watchProject().accept(client, namespace);
+            break;
+        case ROUTE:
+            resourceWatchMap.watchRoute().accept(client, namespace);
+            break;
+        case USER:
+            resourceWatchMap.watchUser().accept(client, namespace);
             break;
         case DEPLOYMENT:
             resourceWatchMap.watchDeployments().accept(client, namespace);

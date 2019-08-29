@@ -39,6 +39,9 @@ import io.fabric8.kubernetes.api.model.storage.StorageClass;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
+import io.fabric8.openshift.api.model.Build;
+import io.fabric8.openshift.api.model.DeploymentConfig;
+import io.fabric8.openshift.client.OpenShiftClient;
 import io.vertx.core.Vertx;
 import lombok.extern.slf4j.Slf4j;
 
@@ -617,8 +620,157 @@ public class ResourceWatchMap {
             T watcher) {
         return (kClient, ns) -> {
             return kClient.policy().podDisruptionBudget().watch(watcher);
-
         };
     }
 
+    private OpenShiftClient openshiftClient(KubernetesClient kClient) {
+        return kClient.adapt(OpenShiftClient.class);
+    }
+
+    public BiConsumer<KubernetesClient, String> watchBuild() {
+        return (t, u) -> {
+            BuildWatcher verticle = resouceWatcher.select(BuildWatcher.class).get();
+            verticle.setType(u + "-build");
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchBuild(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    <T extends Watcher<Build>> BiFunction<KubernetesClient, String, Watch> watchBuild(T watcher) {
+        return (kClient, ns) -> {
+            if (ns != null) {
+                return openshiftClient(kClient).builds().inNamespace(ns).watch(watcher);
+            }
+            return openshiftClient(kClient).builds().watch(watcher);
+        };
+    }
+
+    public BiConsumer<KubernetesClient, String> watchDeploymentConfig() {
+        return (t, u) -> {
+            DeploymentConfigWatcher verticle = resouceWatcher.select(DeploymentConfigWatcher.class).get();
+            verticle.setType(u + "-dc");
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchDeploymentConfig(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    <T extends Watcher<DeploymentConfig>> BiFunction<KubernetesClient, String, Watch> watchDeploymentConfig(T watcher) {
+        return (kClient, ns) -> ns != null ? openshiftClient(kClient).deploymentConfigs().inNamespace(ns).watch(watcher)
+                : openshiftClient(kClient).deploymentConfigs().watch(watcher);
+    }
+
+    public BiConsumer<KubernetesClient, String> watchGroup() {
+        return (t, u) -> {
+            GroupWatcher verticle = resouceWatcher.select(GroupWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchGroup(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchGroup(GroupWatcher watcher) {
+        return (kClient, ns) -> openshiftClient(kClient).groups().watch(watcher);
+    }
+
+    public BiConsumer<KubernetesClient, String> watchImageStream() {
+        return (t, u) -> {
+            ImageStreamWatcher verticle = resouceWatcher.select(ImageStreamWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchImageStream(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchImageStream(ImageStreamWatcher verticle) {
+        return (kClient, ns) -> ns != null ? openshiftClient(kClient).imageStreams().inNamespace(ns).watch(verticle)
+                : openshiftClient(kClient).imageStreams().watch(verticle);
+    }
+
+    public BiConsumer<KubernetesClient, String> watchImageStreamTag() {
+        return (t, u) -> {
+            ImageStreamTagWatcher verticle = resouceWatcher.select(ImageStreamTagWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchImageStreamTag(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchImageStreamTag(ImageStreamTagWatcher verticle) {
+        return (kClient, ns) -> ns != null ? openshiftClient(kClient).imageStreamTags().inNamespace(ns).watch(verticle)
+                : openshiftClient(kClient).imageStreamTags().watch(verticle);
+
+    }
+
+    public BiConsumer<KubernetesClient, String> watchOAuthClient() {
+        return (t, u) -> {
+            OAuthClientWatcher verticle = resouceWatcher.select(OAuthClientWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchOAuthClient(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchOAuthClient(OAuthClientWatcher verticle) {
+        return (kClient, ns) -> openshiftClient(kClient).oAuthClients().watch(verticle);
+
+    }
+
+    public BiConsumer<KubernetesClient, String> watchProject() {
+        return (t, u) -> {
+            ProjectWatcher verticle = resouceWatcher.select(ProjectWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchProject(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchProject(ProjectWatcher verticle) {
+        return (kClient, ns) -> openshiftClient(kClient).projects().watch(verticle);
+    }
+
+    public BiConsumer<KubernetesClient, String> watchRoute() {
+        return (t, u) -> {
+            RouteWatcher verticle = resouceWatcher.select(RouteWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchRoute(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchRoute(RouteWatcher verticle) {
+        return (kClient, ns) -> openshiftClient(kClient).routes().watch(verticle);
+    }
+
+    public BiConsumer<KubernetesClient, String> watchUser() {
+        return (t, u) -> {
+            UserWatcher verticle = resouceWatcher.select(UserWatcher.class).get();
+            vertx.deployVerticle(verticle, handle -> {
+                if (handle.succeeded()) {
+                    watchUser(verticle).apply(t, u);
+                }
+            });
+        };
+    }
+
+    private BiFunction<KubernetesClient, String, Watch> watchUser(UserWatcher verticle) {
+        return (kClient, ns) -> openshiftClient(kClient).users().watch(verticle);
+    }
 }
